@@ -104,16 +104,16 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-2 sm:p-4 md:p-8 max-w-7xl mx-auto">
       <Link href="/inventory" className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 transition-colors">
         <ArrowLeft className="w-4 h-4" /> Back to Inventory
       </Link>
 
-      <div className="flex flex-col md:flex-row gap-8">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8">
         {/* Equipment Details */}
         <div className="flex-1 space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start">
+            <div className="p-4 md:p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <Package className="w-5 h-5 text-gray-400 dark:text-gray-500" />
@@ -121,13 +121,13 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
                     {equipment.control_number}
                   </span>
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{equipment.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{equipment.name}</h1>
               </div>
               <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2">
                 <Edit className="w-4 h-4" /> Edit
               </Button>
             </div>
-            <div className="p-6 grid grid-cols-2 gap-y-6 gap-x-4">
+            <div className="p-4 md:p-6 grid grid-cols-2 gap-y-4 md:gap-y-6 gap-x-4">
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Quantity</h3>
                 <p className="text-lg font-medium text-gray-900 dark:text-white">{equipment.quantity}</p>
@@ -158,7 +158,7 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Comments Section */}
-        <div className="md:w-96 flex flex-col h-[calc(100vh-8rem)]">
+        <div className="w-full md:w-96 flex flex-col h-[400px] md:h-[calc(100vh-8rem)]">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-full overflow-hidden">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-gray-500 dark:text-gray-400" />
