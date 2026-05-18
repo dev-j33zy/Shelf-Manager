@@ -52,11 +52,11 @@ export default function Dashboard() {
   const broken = equipment.filter(e => e.quality === 'Broken').length;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Dashboard Overview</h1>
+    <div className="p-2 sm:p-4 md:p-8 max-w-6xl mx-auto">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4 md:mb-8">Dashboard Overview</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10">
+        <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
           <div className="flex items-center gap-3 text-gray-500 mb-4">
             <div className="p-2 bg-blue-50 rounded-lg">
               <Package className="w-6 h-6 text-blue-600" />
@@ -66,7 +66,7 @@ export default function Dashboard() {
           <p className="text-4xl font-bold text-gray-900 dark:text-white">{total}</p>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+        <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
           <div className="flex items-center gap-3 text-gray-500 mb-4">
             <div className="p-2 bg-green-50 rounded-lg">
               <CheckCircle className="w-6 h-6 text-green-600" />
@@ -76,7 +76,7 @@ export default function Dashboard() {
           <p className="text-4xl font-bold text-gray-900 dark:text-white">{good}</p>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+        <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
           <div className="flex items-center gap-3 text-gray-500 mb-4">
             <div className="p-2 bg-amber-50 rounded-lg">
               <AlertTriangle className="w-6 h-6 text-amber-600" />
@@ -86,7 +86,7 @@ export default function Dashboard() {
           <p className="text-4xl font-bold text-gray-900 dark:text-white">{needsAttention}</p>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+        <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
           <div className="flex items-center gap-3 text-gray-500 mb-4">
             <div className="p-2 bg-red-50 rounded-lg">
               <XCircle className="w-6 h-6 text-red-600" />
@@ -98,7 +98,7 @@ export default function Dashboard() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+        <div className="px-4 md:px-6 py-4 md:py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
           <h2 className="font-semibold text-gray-800 dark:text-gray-200">Recently Added Equipment</h2>
           <Link href="/inventory" className="text-sm font-medium text-blue-600 hover:text-blue-800">
             View All
@@ -106,7 +106,7 @@ export default function Dashboard() {
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {equipment.slice(0, 5).map(item => (
-            <div key={item.id} className="p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div key={item.id} className="p-4 md:p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
                 <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
