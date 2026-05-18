@@ -10,14 +10,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing authorization token' }, { status: 401 });
     }
     
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !serviceRoleKey) {
       return NextResponse.json({ error: 'Server misconfigured: SUPABASE_SERVICE_ROLE_KEY is required to delete accounts.' }, { status: 500 });
     }
 
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
     const supabaseClient = createClient(supabaseUrl, anonKey);
     
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);

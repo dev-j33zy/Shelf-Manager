@@ -9,10 +9,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Identifier is required' }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !serviceRoleKey) {
       return NextResponse.json({ error: 'Server misconfigured: SUPABASE_SERVICE_ROLE_KEY is required to resolve usernames.' }, { status: 500 });
     }
 
