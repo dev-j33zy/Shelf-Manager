@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Package, LayoutDashboard, Settings, List } from 'lucide-react';
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
     { name: 'Inventory', icon: List, href: '/inventory' },
@@ -20,6 +20,7 @@ export function Sidebar() {
           <Link
             key={item.name}
             href={item.href}
+            onClick={onClose}
             className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white transition-colors"
           >
             <item.icon className="w-5 h-5" />
@@ -31,6 +32,7 @@ export function Sidebar() {
       <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-1">
         <Link
           href="/settings"
+          onClick={onClose}
           className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white transition-colors"
         >
           <Settings className="w-5 h-5" />
