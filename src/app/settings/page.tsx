@@ -85,33 +85,33 @@ export default function SettingsPage() {
           <div className="flex flex-wrap gap-4">
             <button
               onClick={() => updateSettings({ theme: 'light' })}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm transition-all ${
                 settings.theme === 'light' 
                   ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' 
                   : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-300'
               }`}
             >
-              <Sun className="w-5 h-5" /> Light
+              <Sun className="w-4 h-4" /> Light
             </button>
             <button
               onClick={() => updateSettings({ theme: 'dark' })}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm transition-all ${
                 settings.theme === 'dark' 
                   ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' 
                   : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-300'
               }`}
             >
-              <Moon className="w-5 h-5" /> Dark
+              <Moon className="w-4 h-4" /> Dark
             </button>
             <button
               onClick={() => updateSettings({ theme: 'system' })}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm transition-all ${
                 settings.theme === 'system' 
                   ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' 
                   : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-300'
               }`}
             >
-              <Monitor className="w-5 h-5" /> System
+              <Monitor className="w-4 h-4" /> System
             </button>
           </div>
         </div>
