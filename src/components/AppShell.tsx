@@ -22,14 +22,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 relative">
-      <div className="md:hidden p-4 absolute top-0 left-0 z-50">
-        <button 
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 focus:outline-none"
-        >
-          <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-        </button>
-      </div>
+      {!sidebarOpen && (
+        <div className="md:hidden p-4 absolute top-0 left-0 z-50 animate-in fade-in duration-200">
+          <button 
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 focus:outline-none"
+            aria-label="Open sidebar"
+          >
+            <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </button>
+        </div>
+      )}
 
       <div className={`
         fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out
