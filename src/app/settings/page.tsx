@@ -190,8 +190,8 @@ export default function SettingsPage() {
       <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
         <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Developer Tools</h2>
         
-        <div className="flex items-center justify-between py-2">
-          <div>
+        <div className="flex justify-between items-start sm:items-center gap-4 py-2">
+          <div className="flex-1 pr-2 sm:pr-0">
             <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Wrench className="w-4 h-4 text-gray-500 dark:text-gray-400" /> Show Next.js Dev Tools
             </p>
@@ -202,7 +202,7 @@ export default function SettingsPage() {
           
           <button 
             onClick={() => updateSettings({ devToolsEnabled: !settings.devToolsEnabled })}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${
+            className={`flex-shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${
               settings.devToolsEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
             }`}
           >
