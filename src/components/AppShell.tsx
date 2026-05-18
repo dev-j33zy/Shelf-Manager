@@ -3,22 +3,14 @@
 import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { useAuth } from './AuthProvider';
-import { Loader2, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useState } from 'react';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname === '/login';
-  const { loading, session } = useAuth();
+  const { session } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
 
   if (!session && !isAuthPage) {
     return null;
