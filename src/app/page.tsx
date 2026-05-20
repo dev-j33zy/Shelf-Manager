@@ -47,10 +47,16 @@ export default function Dashboard() {
     );
   }
 
-  const total = equipment.length;
-  const good = equipment.filter(e => e.quality === 'New' || e.quality === 'Good').length;
-  const needsAttention = equipment.filter(e => e.quality === 'Fair' || e.quality === 'Poor').length;
-  const broken = equipment.filter(e => e.quality === 'Broken').length;
+  const total = equipment.reduce((sum, item) => sum + item.quantity, 0);
+  const good = equipment
+    .filter(e => e.quality === 'New' || e.quality === 'Good')
+    .reduce((sum, item) => sum + item.quantity, 0);
+  const needsAttention = equipment
+    .filter(e => e.quality === 'Fair' || e.quality === 'Poor')
+    .reduce((sum, item) => sum + item.quantity, 0);
+  const broken = equipment
+    .filter(e => e.quality === 'Broken')
+    .reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="p-2 sm:p-4 md:p-8 max-w-6xl mx-auto">
