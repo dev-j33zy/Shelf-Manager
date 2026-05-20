@@ -105,6 +105,10 @@ export const api = {
       .single();
 
     if (error) throw error;
+
+    // Update the main equipment record with the latest quantity and quality
+    await api.updateEquipment(equipmentId, { quantity, quality, updated_at: new Date().toISOString() });
+
     return data as StatusLog;
   },
 };

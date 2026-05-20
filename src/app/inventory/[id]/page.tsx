@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
 import { ArrowLeft, Loader2, Edit, MessageSquare, Package, Save, ClipboardList, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -33,6 +34,39 @@ function QualityBadge({ quality }: { quality: Quality }) {
     </span>
   );
 }
+
+interface ChartData extends StatusLog {
+  quality: number;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: {
+    payload: ChartData;
+    value: number;
+    name: string;
+  }[];
+  label?: number;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+  if (active && payload && payload.length) {
+    const qualityValue = payload[0].payload.quality;
+    const date = new Date(label);
+    return (
+      <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 text-sm">
+        <p className="font-bold mb-1 text-gray-900 dark:text-white">{format(date, 'MMM d, yyyy h:mm a')}</p>
+        <p className="text-blue-600 dark:text-blue-400">Quantity: {payload[0].value}</p>
+        <p className="text-green-600 dark:text-green-400">Quality: {qualityOrder[qualityValue]}</p>
+        {payload[0].payload.notes && <p className="text-gray-600 dark:text-gray-400 italic">Notes: &ldquo;{payload[0].payload.notes}&rdquo;</p>}
+      </div>
+    );
+  }
+  return null;
+};
+
+const QualityTickFormatter = (tick: number) => qualityOrder[tick];
+
 
 export default function EquipmentDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -236,6 +270,43 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
               <h2 className="font-semibold text-gray-800 dark:text-gray-200">Status History</h2>
               <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{statusLogs.length} record{statusLogs.length !== 1 ? 's' : ''}</span>
             </div>
+
+            {statusLogs.length > 1 && (
+              <div className="w-full h-64 p-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={statusLogs.map(log => ({
+                      ...log,
+                      quality: qualityOrder.indexOf(log.quality),
+                      recorded_at: new Date(log.recorded_at).getTime(),
+                    })).sort((a, b) => a.recorded_at - b.recorded_at)}
+                    margin={{
+                      top: 5,
+                      right: 30,
+                      left: 20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                    <XAxis
+                      dataKey="recorded_at"
+                      tickFormatter={(unixTime) => format(new Date(unixTime), 'MMM d')}
+                      minTickGap={30}
+                      angle={-30}
+                      textAnchor="end"
+                      height={60}
+                      tick={{ fill: '#6B7280', fontSize: 12 }}
+                    />
+                    <YAxis yAxisId="left" label={{ value: 'Quantity', angle: -90, position: 'insideLeft', fill: '#6B7280' }} stroke="#2563EB" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                    <YAxis yAxisId="right" orientation="right" label={{ value: 'Quality', angle: 90, position: 'insideRight', fill: '#6B7280' }} stroke="#10B981" tickFormatter={QualityTickFormatter} domain={[0, qualityOrder.length - 1]} tickCount={qualityOrder.length} tick={{ fill: '#6B7280', fontSize: 12 }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="quantity" stroke="#2563EB" activeDot={{ r: 8 }} name="Quantity" />
+                    <Line yAxisId="right" type="monotone" dataKey="quality" stroke="#10B981" activeDot={{ r: 8 }} name="Quality" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
 
             {statusLogs.length === 0 ? (
               <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
