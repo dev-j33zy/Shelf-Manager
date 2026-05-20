@@ -35,7 +35,7 @@ function QualityBadge({ quality }: { quality: Quality }) {
   );
 }
 
-interface ChartData extends StatusLog {
+interface ChartData extends Omit<StatusLog, 'quality'> {
   quality: number;
 }
 
@@ -50,7 +50,7 @@ interface CustomTooltipProps {
 }
 
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
-  if (active && payload && payload.length) {
+  if (active && payload && payload.length && label !== undefined) {
     const qualityValue = payload[0].payload.quality;
     const date = new Date(label);
     return (
