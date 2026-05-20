@@ -17,11 +17,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthPage) {
-    return <main className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">{children}</main>;
+    return <main className="min-h-dvh flex flex-col bg-gray-50 dark:bg-gray-900">{children}</main>;
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 relative">
+    <div className="flex h-dvh overflow-hidden bg-gray-50 dark:bg-gray-900 relative">
       {!sidebarOpen && (
         <div className="md:hidden p-4 absolute top-0 left-0 z-50 animate-in fade-in duration-200">
           <button 
@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className={`
         fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out
-        md:relative md:translate-x-0 w-64 shadow-xl md:shadow-none
+        md:relative md:translate-x-0 w-64 shadow-xl md:shadow-none h-full
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <Sidebar onClose={() => setSidebarOpen(false)} />
@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      <main className="flex-1 overflow-y-auto w-full md:w-[calc(100%-16rem)] h-screen">
+      <main className="flex-1 overflow-y-auto w-full md:w-[calc(100%-16rem)] h-full">
         <div className="px-2 py-4 md:p-8 pt-16 md:pt-8 w-full max-w-7xl mx-auto h-full">
           {children}
         </div>

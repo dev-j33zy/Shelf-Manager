@@ -1,22 +1,47 @@
 "use client";
 
-import React, { useEffect, useState, use } from 'react';
+import React, { useEffect, useState, use, useCallback } from 'react';
 import { api } from '@/lib/api';
-import { Equipment, Comment, Quality } from '@/lib/types';
+import { Equipment, Comment, Quality, StatusLog } from '@/lib/types';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
-import { ArrowLeft, Loader2, Edit, MessageSquare, Package, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Edit, MessageSquare, Package, Save, ClipboardList, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
+const qualityOrder: Quality[] = ['Broken', 'Poor', 'Fair', 'Good', 'New'];
+
+function qualityDelta(prev: Quality, curr: Quality): 'up' | 'down' | 'same' {
+  const pi = qualityOrder.indexOf(prev);
+  const ci = qualityOrder.indexOf(curr);
+  if (ci > pi) return 'up';
+  if (ci < pi) return 'down';
+  return 'same';
+}
+
+function QualityBadge({ quality }: { quality: Quality }) {
+  const cls =
+    quality === 'New' || quality === 'Good'
+      ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+      : quality === 'Fair' || quality === 'Poor'
+      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+      : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+  return (
+    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {quality}
+    </span>
+  );
+}
+
 export default function EquipmentDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  
+
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [statusLogs, setStatusLogs] = useState<StatusLog[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Edit state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [submittingEdit, setSubmittingEdit] = useState(false);
@@ -24,34 +49,52 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
 
   // Comment state
   const [newComment, setNewComment] = useState('');
-  const [author, setAuthor] = useState('');
+  const [commentAuthor, setCommentAuthor] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
 
-  const loadData = async () => {
+  // Status log state
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [submittingStatus, setSubmittingStatus] = useState(false);
+  const [statusForm, setStatusForm] = useState({
+    quantity: 0,
+    quality: 'Good' as Quality,
+    notes: '',
+    recorded_by: '',
+  });
+
+  const loadData = useCallback(async () => {
     try {
-      const [eqData, commentsData] = await Promise.all([
+      const [eqData, commentsData, logsData] = await Promise.all([
         api.getEquipmentById(id),
-        api.getComments(id)
+        api.getComments(id),
+        api.getStatusLogs(id),
       ]);
       setEquipment(eqData);
       setComments(commentsData);
+      setStatusLogs(logsData);
       setEditForm({
         name: eqData.name,
         quantity: eqData.quantity,
         quality: eqData.quality,
         department: eqData.department,
-        location: eqData.location
+        location: eqData.location,
       });
+      setStatusForm(prev => ({
+        ...prev,
+        quantity: eqData.quantity,
+        quality: eqData.quality,
+      }));
     } catch (error) {
       console.error('Failed to load equipment data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
-  }, [id]);
+  }, [loadData]);
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,12 +114,11 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
-    
     setSubmittingComment(true);
     try {
-      await api.addComment(id, newComment, author || 'Anonymous');
+      await api.addComment(id, newComment, commentAuthor || 'Anonymous');
       setNewComment('');
-      loadData(); // refresh comments
+      loadData();
     } catch (error) {
       console.error('Failed to add comment:', error);
     } finally {
@@ -84,9 +126,31 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
     }
   };
 
+  const handleStatusSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingStatus(true);
+    try {
+      await api.addStatusLog(
+        id,
+        statusForm.quantity,
+        statusForm.quality,
+        statusForm.notes,
+        statusForm.recorded_by || 'Anonymous'
+      );
+      setIsStatusModalOpen(false);
+      setStatusForm(prev => ({ ...prev, notes: '', recorded_by: '' }));
+      loadData();
+    } catch (error) {
+      console.error('Failed to record status:', error);
+      alert('Failed to record status. Make sure the status_logs table exists in your database.');
+    } finally {
+      setSubmittingStatus(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
@@ -95,7 +159,7 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
   if (!equipment) {
     return (
       <div className="p-8 max-w-4xl mx-auto text-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Equipment Not Found</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Equipment Not Found</h1>
         <Link href="/inventory">
           <Button variant="secondary">Back to Inventory</Button>
         </Link>
@@ -110,8 +174,10 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
       </Link>
 
       <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-        {/* Equipment Details */}
+        {/* Left column: Equipment details + Status History */}
         <div className="flex-1 space-y-6">
+
+          {/* Equipment Details Card */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="p-4 md:p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start">
               <div>
@@ -123,9 +189,22 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
                 </div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{equipment.name}</h1>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2">
-                <Edit className="w-4 h-4" /> Edit
-              </Button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setStatusForm({ quantity: equipment.quantity, quality: equipment.quality, notes: '', recorded_by: '' });
+                    setIsStatusModalOpen(true);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <ClipboardList className="w-4 h-4" /> Record Status
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2">
+                  <Edit className="w-4 h-4" /> Edit
+                </Button>
+              </div>
             </div>
             <div className="p-4 md:p-6 grid grid-cols-2 gap-y-4 md:gap-y-6 gap-x-4">
               <div>
@@ -134,13 +213,7 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
               </div>
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Quality</h3>
-                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium mt-1
-                  ${equipment.quality === 'New' || equipment.quality === 'Good' ? 'bg-green-100 text-green-700' : 
-                    equipment.quality === 'Fair' || equipment.quality === 'Poor' ? 'bg-amber-100 text-amber-700' : 
-                    'bg-red-100 text-red-700'}
-                `}>
-                  {equipment.quality}
-                </span>
+                <div className="mt-1"><QualityBadge quality={equipment.quality} /></div>
               </div>
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Department</h3>
@@ -155,16 +228,113 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
               </div>
             </div>
           </div>
+
+          {/* Status History Timeline */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="px-4 md:px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50">
+              <ClipboardList className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <h2 className="font-semibold text-gray-800 dark:text-gray-200">Status History</h2>
+              <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{statusLogs.length} record{statusLogs.length !== 1 ? 's' : ''}</span>
+            </div>
+
+            {statusLogs.length === 0 ? (
+              <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+                No status records yet. Use &ldquo;Record Status&rdquo; to start tracking.
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {statusLogs.map((log, index) => {
+                  const prev = statusLogs[index + 1];
+                  const qDelta = prev ? qualityDelta(prev.quality, log.quality) : 'same';
+                  const qtyDiff = prev ? log.quantity - prev.quantity : 0;
+
+                  return (
+                    <div key={log.id} className="p-4 md:p-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                        {/* Timeline dot */}
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className={`w-2.5 h-2.5 rounded-full ring-2 ring-offset-2 dark:ring-offset-gray-800 mt-1 ${
+                            index === 0 ? 'bg-blue-500 ring-blue-300' : 'bg-gray-300 dark:bg-gray-600 ring-gray-200 dark:ring-gray-700'
+                          }`} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          {/* Header row */}
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {log.recorded_by}
+                            </span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {format(new Date(log.recorded_at), 'PPp')}
+                            </span>
+                            {index === 0 && (
+                              <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
+                                Latest
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Metrics row */}
+                          <div className="flex flex-wrap items-center gap-4 mb-2">
+                            {/* Quantity */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">Qty:</span>
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white">{log.quantity}</span>
+                              {prev && qtyDiff !== 0 && (
+                                <span className={`flex items-center gap-0.5 text-xs font-medium ${
+                                  qtyDiff > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+                                }`}>
+                                  {qtyDiff > 0
+                                    ? <TrendingUp className="w-3 h-3" />
+                                    : <TrendingDown className="w-3 h-3" />}
+                                  {qtyDiff > 0 ? '+' : ''}{qtyDiff}
+                                </span>
+                              )}
+                              {prev && qtyDiff === 0 && (
+                                <Minus className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                              )}
+                            </div>
+
+                            {/* Quality */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">Quality:</span>
+                              <QualityBadge quality={log.quality} />
+                              {prev && qDelta !== 'same' && (
+                                <span className={`text-xs font-medium ${
+                                  qDelta === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+                                }`}>
+                                  {qDelta === 'up'
+                                    ? <TrendingUp className="w-3 h-3 inline" />
+                                    : <TrendingDown className="w-3 h-3 inline" />}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Notes */}
+                          {log.notes && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-700/50 rounded-md px-2 py-1.5 mt-1">
+                              &ldquo;{log.notes}&rdquo;
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Comments Section */}
-        <div className="w-full md:w-96 flex flex-col h-[400px] md:h-[calc(100vh-8rem)]">
+        {/* Right column: Comments */}
+        <div className="w-full md:w-96 flex flex-col h-[400px] md:h-[calc(100dvh-8rem)]">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-full overflow-hidden">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               <h2 className="font-semibold text-gray-800 dark:text-gray-200">Notes & Comments</h2>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {comments.map(comment => (
                 <div key={comment.id} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-sm border border-transparent dark:border-gray-700/50">
@@ -184,10 +354,10 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
 
             <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
               <form onSubmit={handleCommentSubmit} className="space-y-3">
-                <Input 
-                  placeholder="Your name (optional)" 
-                  value={author}
-                  onChange={e => setAuthor(e.target.value)}
+                <Input
+                  placeholder="Your name (optional)"
+                  value={commentAuthor}
+                  onChange={e => setCommentAuthor(e.target.value)}
                   className="h-8 text-sm"
                 />
                 <textarea
@@ -207,29 +377,30 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
+      {/* Edit Equipment Modal */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Equipment">
         <form onSubmit={handleEditSubmit} className="space-y-4">
-          <Input 
-            label="Name" 
-            required 
-            value={editForm.name || ''} 
-            onChange={e => setEditForm({...editForm, name: e.target.value})} 
+          <Input
+            label="Name"
+            required
+            value={editForm.name || ''}
+            onChange={e => setEditForm({ ...editForm, name: e.target.value })}
           />
           <div className="grid grid-cols-2 gap-4">
-            <Input 
-              label="Quantity" 
-              type="number" 
-              min={0} 
-              required 
-              value={editForm.quantity || 0} 
-              onChange={e => setEditForm({...editForm, quantity: parseInt(e.target.value) || 0})} 
+            <Input
+              label="Quantity"
+              type="number"
+              min={0}
+              required
+              value={editForm.quantity || 0}
+              onChange={e => setEditForm({ ...editForm, quantity: parseInt(e.target.value) || 0 })}
             />
             <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quality</label>
-              <select 
+              <select
                 className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={editForm.quality}
-                onChange={e => setEditForm({...editForm, quality: e.target.value as Quality})}
+                onChange={e => setEditForm({ ...editForm, quality: e.target.value as Quality })}
               >
                 <option value="New">New</option>
                 <option value="Good">Good</option>
@@ -239,23 +410,81 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
               </select>
             </div>
           </div>
-          <Input 
-            label="Department" 
-            required 
-            value={editForm.department || ''} 
-            onChange={e => setEditForm({...editForm, department: e.target.value})} 
+          <Input
+            label="Department"
+            required
+            value={editForm.department || ''}
+            onChange={e => setEditForm({ ...editForm, department: e.target.value })}
           />
-          <Input 
-            label="Location" 
-            required 
-            value={editForm.location || ''} 
-            onChange={e => setEditForm({...editForm, location: e.target.value})} 
+          <Input
+            label="Location"
+            required
+            value={editForm.location || ''}
+            onChange={e => setEditForm({ ...editForm, location: e.target.value })}
           />
           <div className="pt-4 flex justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={submittingEdit} className="flex items-center gap-2">
               {submittingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Record Status Modal */}
+      <Modal isOpen={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)} title="Record Current Status">
+        <form onSubmit={handleStatusSubmit} className="space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Snapshot the current condition of this item. This creates a historical record you can compare over time.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Quantity"
+              type="number"
+              min={0}
+              required
+              value={statusForm.quantity}
+              onChange={e => setStatusForm({ ...statusForm, quantity: parseInt(e.target.value) || 0 })}
+            />
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quality</label>
+              <select
+                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={statusForm.quality}
+                onChange={e => setStatusForm({ ...statusForm, quality: e.target.value as Quality })}
+              >
+                <option value="New">New</option>
+                <option value="Good">Good</option>
+                <option value="Fair">Fair</option>
+                <option value="Poor">Poor</option>
+                <option value="Broken">Broken</option>
+              </select>
+            </div>
+          </div>
+          <Input
+            label="Recorded by"
+            placeholder="Your name (optional)"
+            value={statusForm.recorded_by}
+            onChange={e => setStatusForm({ ...statusForm, recorded_by: e.target.value })}
+          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Notes <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <textarea
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              placeholder="e.g. After annual inspection, post-maintenance check..."
+              rows={3}
+              value={statusForm.notes}
+              onChange={e => setStatusForm({ ...statusForm, notes: e.target.value })}
+            />
+          </div>
+          <div className="pt-2 flex justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={() => setIsStatusModalOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={submittingStatus} className="flex items-center gap-2">
+              {submittingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" />}
+              Save Record
             </Button>
           </div>
         </form>

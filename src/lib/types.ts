@@ -19,3 +19,13 @@ export interface Comment {
   author: string;
   created_at: string;
 }
+
+export interface StatusLog {
+  id: string;
+  equipment_id: string;
+  quantity: number;
+  quality: Quality;
+  notes: string;
+  recorded_by: string;
+  recorded_at: string;
+}

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { Equipment, Quality } from '@/lib/types';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
-import { Plus, Search, Loader2, Edit, Eye, Trash2 } from 'lucide-react';
+import { Plus, Search, Loader2, Eye, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Inventory() {
@@ -28,23 +28,25 @@ export default function Inventory() {
     location: ''
   });
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.getEquipment();
       setEquipment(data);
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to fetch equipment:', err);
-      setError(err?.message || 'An unknown error occurred while fetching equipment.');
+      const message = err instanceof Error ? err.message : 'An unknown error occurred while fetching equipment.';
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
-  }, []);
+  }, [loadData]);
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,9 +63,10 @@ export default function Inventory() {
         location: ''
       });
       loadData();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to create equipment:', error);
-      alert(`Failed to add equipment: ${error?.message || 'Unknown error'}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to add equipment: ${message}`);
     } finally {
       setSubmitting(false);
     }
@@ -75,9 +78,10 @@ export default function Inventory() {
       await api.deleteEquipment(itemToDelete);
       setItemToDelete(null);
       loadData();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to delete equipment:', error);
-      alert(`Failed to delete equipment: ${error?.message || 'Unknown error'}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to delete equipment: ${message}`);
     }
   };
 

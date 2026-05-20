@@ -16,9 +16,10 @@ export default function Dashboard() {
       try {
         const data = await api.getEquipment();
         setEquipment(data);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to fetch equipment:', err);
-        setError(err?.message || 'An unknown error occurred while fetching equipment.');
+        const message = err instanceof Error ? err.message : 'An unknown error occurred while fetching equipment.';
+        setError(message);
       } finally {
         setLoading(false);
       }

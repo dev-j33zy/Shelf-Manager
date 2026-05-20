@@ -9,7 +9,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   ];
 
   return (
-    <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-h-screen p-4 flex flex-col transition-colors">
+    <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full p-4 flex flex-col transition-colors">
       <div className="flex items-center justify-between px-2 mb-8">
         <div className="flex items-center gap-2">
           <Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />

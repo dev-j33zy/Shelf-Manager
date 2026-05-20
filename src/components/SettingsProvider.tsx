@@ -17,21 +17,27 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<Settings>({
-    theme: 'system',
-    devToolsEnabled: false,
+  const [settings, setSettings] = useState<Settings>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('shelf-manager-settings');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return {
+      theme: 'system',
+      devToolsEnabled: false,
+    };
   });
 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Load from localStorage on mount
-    const saved = localStorage.getItem('shelf-manager-settings');
-    if (saved) {
-      try {
-        setSettings(JSON.parse(saved));
-      } catch (e) {}
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

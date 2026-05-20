@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Equipment, Comment, Quality } from './types';
+import { Equipment, Comment, StatusLog } from './types';
 
 export const api = {
   // Equipment
@@ -77,5 +77,34 @@ export const api = {
     
     if (error) throw error;
     return data as Comment;
-  }
+  },
+
+  // Status Logs
+  async getStatusLogs(equipmentId: string) {
+    const { data, error } = await supabase
+      .from('status_logs')
+      .select('*')
+      .eq('equipment_id', equipmentId)
+      .order('recorded_at', { ascending: false });
+
+    if (error) throw error;
+    return data as StatusLog[];
+  },
+
+  async addStatusLog(
+    equipmentId: string,
+    quantity: number,
+    quality: StatusLog['quality'],
+    notes: string = '',
+    recordedBy: string = 'Anonymous'
+  ) {
+    const { data, error } = await supabase
+      .from('status_logs')
+      .insert([{ equipment_id: equipmentId, quantity, quality, notes, recorded_by: recordedBy }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as StatusLog;
+  },
 };

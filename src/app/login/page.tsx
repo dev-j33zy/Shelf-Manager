@@ -56,9 +56,10 @@ export default function LoginPage() {
           setSuccess('Account created! Please check your email to verify your account.');
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Auth error:', err);
-      setError(err?.message || 'An unexpected error occurred.');
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -77,15 +78,16 @@ export default function LoginPage() {
       const { error } = await supabase.auth.resetPasswordForEmail(finalEmail);
       if (error) throw error;
       setSuccess('Password reset instructions sent to your email.');
-    } catch (err: any) {
-      setError(err?.message || 'Failed to send reset email.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to send reset email.';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-dvh items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
       <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in duration-300">
         
         <div className="p-8 text-center bg-blue-600 dark:bg-blue-900/50">

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useSettings } from '@/components/SettingsProvider';
-import { Moon, Sun, Monitor, Wrench, User, Mail, Lock, Phone, Trash2, LogOut, Loader2 } from 'lucide-react';
+import { Moon, Sun, Monitor, Wrench, User, Trash2, LogOut, Loader2 } from 'lucide-react';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
@@ -28,7 +28,7 @@ export default function SettingsPage() {
     setAccountMessage({ type: '', text: '' });
     
     try {
-      const updates: any = {};
+      const updates: { email?: string; password?: string; data?: { username?: string; phone?: string } } = {};
       if (email !== user?.email) updates.email = email;
       if (password) updates.password = password;
       if (username !== user?.user_metadata?.username || phone !== user?.user_metadata?.phone) {
@@ -45,8 +45,9 @@ export default function SettingsPage() {
       
       setAccountMessage({ type: 'success', text: 'Profile updated successfully! If you changed your email, please check your inbox for a confirmation link.' });
       setPassword(''); // Clear password after successful update
-    } catch (error: any) {
-      setAccountMessage({ type: 'error', text: error.message || 'Failed to update profile.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile.';
+      setAccountMessage({ type: 'error', text: message });
     } finally {
       setAccountLoading(false);
     }
@@ -66,8 +67,9 @@ export default function SettingsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete account.');
       await signOut();
-    } catch (error: any) {
-      setAccountMessage({ type: 'error', text: error.message || 'Failed to delete account. Note: Requires SUPABASE_SERVICE_ROLE_KEY to be set.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete account. Note: Requires SUPABASE_SERVICE_ROLE_KEY to be set.';
+      setAccountMessage({ type: 'error', text: message });
     } finally {
       setAccountLoading(false);
     }
