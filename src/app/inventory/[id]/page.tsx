@@ -199,10 +199,10 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
                   }}
                   className="flex items-center gap-2"
                 >
-                  <ClipboardList className="w-4 h-4" /> Record Status
+                  <ClipboardList className="w-4 h-4" /> <span className="hidden sm:inline">Record Status</span>
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2">
-                  <Edit className="w-4 h-4" /> Edit
+                  <Edit className="w-4 h-4" /> <span className="hidden sm:inline">Edit</span>
                 </Button>
               </div>
             </div>
