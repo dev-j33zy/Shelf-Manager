@@ -14,9 +14,31 @@ export function QRCodeScanner({ onScan, onClose, isOpen }: QRCodeScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [focusing, setFocusing] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [containerId] = useState(() => 'qr-scanner-' + Math.random().toString(36).slice(2));
+
+  const handleViewfinderClick = async () => {
+    if (!scannerRef.current) return;
+    setFocusing(true);
+    if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
+    focusTimeoutRef.current = setTimeout(() => setFocusing(false), 600);
+    try {
+      const container = document.getElementById(containerId);
+      const video = container?.querySelector('video');
+      if (video && video.srcObject) {
+        const track = (video.srcObject as MediaStream).getVideoTracks()[0];
+        if (track) {
+          const capabilities = track.getCapabilities?.();
+          if ((capabilities as any)?.focusMode?.includes('single-shot')) {
+            await track.applyConstraints({ advanced: [{ focusMode: 'single-shot' } as any] });
+          }
+        }
+      }
+    } catch {}
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -103,6 +125,21 @@ export function QRCodeScanner({ onScan, onClose, isOpen }: QRCodeScannerProps) {
             className="w-full"
           />
 
+          {/* Tap-to-focus overlay */}
+          {!initializing && !error && (
+            <div
+              className="absolute inset-0 z-10 cursor-pointer"
+              onClick={handleViewfinderClick}
+            >
+              {/* Focus animation */}
+              {focusing && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-16 h-16 border-2 border-blue-400 rounded-full animate-ping opacity-75" />
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Loading overlay */}
           {initializing && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/80 z-10 min-h-[300px]">
@@ -129,7 +166,7 @@ export function QRCodeScanner({ onScan, onClose, isOpen }: QRCodeScannerProps) {
         {scanning && !error && (
           <div className="px-4 pb-4">
             <p className="text-center text-sm text-gray-400">
-              Point your camera at a QR code
+              Point your camera at a QR code &mdash; tap the viewfinder to focus
             </p>
           </div>
         )}

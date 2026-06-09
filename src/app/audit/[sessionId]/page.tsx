@@ -187,14 +187,14 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{session.title}</h1>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-words min-w-0">{session.title}</h1>
               {session.is_completed ? (
-                <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 px-2 py-0.5 rounded-full font-medium">
+                <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 px-2 py-0.5 rounded-full font-medium shrink-0">
                   <CheckCircle className="w-3 h-3" /> Completed
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
+                <span className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium shrink-0">
                   <Clock className="w-3 h-3" /> In Progress
                 </span>
               )}
@@ -207,20 +207,22 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="text-right shrink-0">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{records.length}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Items Scanned</p>
             </div>
             {!session.is_completed && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
+                  size="sm"
                   onClick={() => setIsScannerOpen(true)}
                   className="flex items-center gap-2"
                 >
                   <Camera className="w-4 h-4" /> Scan QR
                 </Button>
                 <Button
+                  size="sm"
                   variant="secondary"
                   onClick={() => setIsCompleteModalOpen(true)}
                   className="flex items-center gap-2"
@@ -228,11 +230,12 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
                   <CheckCircle className="w-4 h-4" /> Complete
                 </Button>
                 <Button
+                  size="sm"
                   variant="ghost"
                   onClick={() => setIsCancelModalOpen(true)}
                   className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
                 >
-                  Cancel Session
+                  Cancel
                 </Button>
               </div>
             )}
