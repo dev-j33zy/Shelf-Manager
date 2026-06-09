@@ -177,3 +177,33 @@ CREATE POLICY "Allow authenticated users to insert audit_records"
   ON audit_records FOR INSERT
   TO authenticated
   WITH CHECK (true);
+
+-- ============================================================
+-- App Settings table (global settings for all users)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS app_settings (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  church_name TEXT NOT NULL DEFAULT 'Property of UCCP Sukat Evangelical Church',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow authenticated users to read app_settings" ON app_settings;
+CREATE POLICY "Allow authenticated users to read app_settings"
+  ON app_settings FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Allow authenticated users to insert app_settings" ON app_settings;
+CREATE POLICY "Allow authenticated users to insert app_settings"
+  ON app_settings FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow authenticated users to update app_settings" ON app_settings;
+CREATE POLICY "Allow authenticated users to update app_settings"
+  ON app_settings FOR UPDATE
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);

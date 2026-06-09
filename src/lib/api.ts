@@ -238,6 +238,39 @@ export const api = {
     return data as AuditRecord;
   },
 
+  // App Settings (global)
+  async getChurchName(): Promise<string> {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('church_name')
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data?.church_name || 'Property of UCCP Sukat Evangelical Church';
+  },
+
+  async setChurchName(churchName: string): Promise<void> {
+    const { data: existing } = await supabase
+      .from('app_settings')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ church_name: churchName, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('app_settings')
+        .insert([{ church_name: churchName }]);
+      if (error) throw error;
+    }
+  },
+
   // Logo / Storage
   async uploadLogo(file: File) {
     const { data, error } = await supabase.storage

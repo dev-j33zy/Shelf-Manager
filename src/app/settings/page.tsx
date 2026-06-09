@@ -434,11 +434,8 @@ export default function SettingsPage() {
         <div className="space-y-6 max-w-xl">
           {/* Church Logo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Church Logo
-            </label>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              Upload your church logo to be displayed in the center of generated QR codes.
+              Upload your church logo to be displayed in the center of generated QR codes. This logo is shared with all users.
             </p>
             <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
               Tip: Use an <strong>.SVG</strong> file to enable monotone recoloring of the logo to match the QR theme.
@@ -538,9 +535,14 @@ export default function SettingsPage() {
               <Button
                 type="button"
                 size="sm"
-                onClick={() => {
-                  updateSettings({ churchName });
-                  setLogoMessage({ type: 'success', text: 'Church name updated!' });
+                onClick={async () => {
+                  try {
+                    await api.setChurchName(churchName);
+                    updateSettings({ churchName });
+                    setLogoMessage({ type: 'success', text: 'Church name updated globally!' });
+                  } catch (err) {
+                    setLogoMessage({ type: 'error', text: 'Failed to save church name.' });
+                  }
                 }}
               >
                 Save

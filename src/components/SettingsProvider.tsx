@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -21,23 +23,24 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('shelf-manager-settings');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          // ignore
-        }
-      }
-    }
-    return {
+    const defaults: Settings = {
       theme: 'system',
       devToolsEnabled: false,
       logoUrl: '',
       logoIsSvg: false,
       churchName: 'Property of UCCP Sukat Evangelical Church',
     };
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('shelf-manager-settings');
+      if (saved) {
+        try {
+          return { ...defaults, ...JSON.parse(saved) };
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return defaults;
   });
 
   const [mounted, setMounted] = useState(false);
@@ -48,8 +51,22 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Initialize logoUrl from Supabase (global for all users)
+    const { data } = supabase.storage.from('logos').getPublicUrl('church-logo.png');
+    if (data.publicUrl) {
+      setSettings(prev => prev.logoUrl ? prev : { ...prev, logoUrl: data.publicUrl });
+    }
+    // Load church name from global app_settings
+    api.getChurchName().then(name => {
+      setSettings(prev => ({ ...prev, churchName: name }));
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (!mounted) return;
-    localStorage.setItem('shelf-manager-settings', JSON.stringify(settings));
+    // Don't persist global settings (logoUrl, logoIsSvg, churchName)
+    const { logoUrl, logoIsSvg, churchName, ...persisted } = settings;
+    localStorage.setItem('shelf-manager-settings', JSON.stringify(persisted));
 
     // Apply theme
     const root = document.documentElement;
