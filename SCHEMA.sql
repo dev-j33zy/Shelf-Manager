@@ -142,6 +142,12 @@ CREATE POLICY "Allow authenticated users to update audit_sessions"
   USING (true)
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow authenticated users to delete audit_sessions" ON audit_sessions;
+CREATE POLICY "Allow authenticated users to delete audit_sessions"
+  ON audit_sessions FOR DELETE
+  TO authenticated
+  USING (true);
+
 -- ============================================================
 -- Audit Records table (individual scanned items during audit)
 -- ============================================================

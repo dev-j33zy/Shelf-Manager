@@ -50,6 +50,10 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [completing, setCompleting] = useState(false);
 
+  // Cancel modal
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
   const loadData = useCallback(async () => {
     try {
       const [sessionData, recordsData] = await Promise.all([
@@ -136,6 +140,19 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
     }
   };
 
+  const handleCancelAudit = async () => {
+    setCancelling(true);
+    try {
+      await api.deleteAuditSession(sessionId);
+      window.location.href = '/audit';
+    } catch (err) {
+      console.error('Failed to cancel audit:', err);
+      alert('Failed to cancel audit.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -207,6 +224,13 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
                   className="flex items-center gap-2"
                 >
                   <CheckCircle className="w-4 h-4" /> Complete
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsCancelModalOpen(true)}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
+                >
+                  Cancel Session
                 </Button>
               </div>
             )}
@@ -293,6 +317,27 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
           isDuplicate={isDuplicate}
         />
       )}
+
+      {/* Cancel Audit Modal */}
+      <Modal isOpen={isCancelModalOpen} onClose={() => setIsCancelModalOpen(false)} title="Cancel Audit Session">
+        <div className="space-y-4">
+          <p className="text-gray-700 dark:text-gray-300">
+            Are you sure you want to cancel this audit session?
+          </p>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              This will permanently delete the session and all {records.length} scanned record{records.length !== 1 ? 's' : ''}. This action cannot be undone.
+            </p>
+          </div>
+          <div className="pt-4 flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsCancelModalOpen(false)}>Keep Session</Button>
+            <Button onClick={handleCancelAudit} disabled={cancelling} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white">
+              {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {cancelling ? 'Cancelling...' : 'Cancel Session'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Complete Audit Modal */}
       <Modal isOpen={isCompleteModalOpen} onClose={() => setIsCompleteModalOpen(false)} title="Complete Audit">

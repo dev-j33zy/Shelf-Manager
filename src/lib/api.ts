@@ -167,6 +167,15 @@ export const api = {
     return data as AuditSession;
   },
 
+  async deleteAuditSession(id: string) {
+    const { error } = await supabase
+      .from('audit_sessions')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
   // Audit Records
   async getAuditRecords(sessionId: string) {
     const { data, error } = await supabase

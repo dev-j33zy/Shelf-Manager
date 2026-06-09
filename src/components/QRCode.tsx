@@ -75,7 +75,7 @@ export function QRCode({
         }
       }
     );
-  }, [controlNumber, size, darkColor, lightColor, showLogo]);
+  }, [controlNumber, size, darkColor, lightColor, showLogo, logoLoaded]);
 
   useEffect(() => {
     if (!showLogo || !settings.logoUrl) {

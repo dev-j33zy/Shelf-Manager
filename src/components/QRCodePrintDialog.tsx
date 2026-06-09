@@ -22,6 +22,51 @@ type GridSize = 1 | 2 | 3 | 4;
 type ColorMode = 'color' | 'monotone';
 type PrintTheme = 'light' | 'dark';
 
+function overlayLogoOnDataUrl(
+  qrDataUrl: string,
+  logoUrl: string,
+  qrSize: number
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = qrSize;
+      canvas.height = qrSize;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(qrDataUrl); return; }
+
+      const qrImg = new Image();
+      qrImg.crossOrigin = 'anonymous';
+      qrImg.onload = () => {
+        ctx.drawImage(qrImg, 0, 0, qrSize, qrSize);
+
+        const logoSize = qrSize * 0.2;
+        const logoX = (qrSize - logoSize) / 2;
+        const logoY = (qrSize - logoSize) / 2;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 + 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+
+        resolve(canvas.toDataURL());
+      };
+      qrImg.onerror = () => resolve(qrDataUrl);
+      qrImg.src = qrDataUrl;
+    };
+    img.onerror = () => resolve(qrDataUrl);
+    img.src = logoUrl;
+  });
+}
+
 export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogProps) {
   const [gridSize, setGridSize] = useState<GridSize>(2);
   const [colorMode, setColorMode] = useState<ColorMode>('color');
@@ -39,16 +84,22 @@ export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogP
 
     const urls = await Promise.all(
       items.map(async (item) => {
-        const url = await QRCodeLib.toDataURL(item.controlNumber, {
+        const qrDataUrl = await QRCodeLib.toDataURL(item.controlNumber, {
           width: qrSize,
           margin: 2,
           color: { dark: darkColor, light: lightColor },
         });
-        return { controlNumber: item.controlNumber, url };
+
+        if (showLogo && settings.logoUrl) {
+          const withLogo = await overlayLogoOnDataUrl(qrDataUrl, settings.logoUrl, qrSize);
+          return { controlNumber: item.controlNumber, url: withLogo };
+        }
+
+        return { controlNumber: item.controlNumber, url: qrDataUrl };
       })
     );
     return urls;
-  }, [items, qrSize, colorMode, printTheme]);
+  }, [items, qrSize, colorMode, printTheme, showLogo, settings.logoUrl]);
 
   const handlePrint = async () => {
     const dataUrls = await generateDataUrls();
