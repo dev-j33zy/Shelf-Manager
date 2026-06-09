@@ -283,9 +283,16 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
         </div>
       </div>
 
+      {/* Audit Summary (only when completed) */}
+      {session.is_completed && (
+        <div className="mb-6">
+          <AuditSummary session={session} records={records} />
+        </div>
+      )}
+
       {/* Scanned Items */}
       {records.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center mb-6">
           <QrCode className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Items Scanned Yet</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
@@ -298,7 +305,7 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
           )}
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6">
           <div className="px-4 md:px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
             <h2 className="font-semibold text-gray-800 dark:text-gray-200">
               Scanned Items ({records.length})
@@ -352,13 +359,6 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
               </tbody>
             </table>
           </div>
-        </div>
-      )}
-
-      {/* Audit Summary (only when completed) */}
-      {session.is_completed && (
-        <div className="mb-6">
-          <AuditSummary session={session} records={records} />
         </div>
       )}
 
