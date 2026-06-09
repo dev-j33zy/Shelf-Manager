@@ -8,7 +8,7 @@ import { Modal } from '@/components/Modal';
 import { QRCodeScanner } from '@/components/QRCodeScanner';
 import { AuditStatusModal } from '@/components/AuditStatusModal';
 import { useAuth } from '@/components/AuthProvider';
-import { ArrowLeft, Loader2, Camera, CheckCircle, Clock, ClipboardCheck, QrCode } from 'lucide-react';
+import { ArrowLeft, Loader2, Camera, CheckCircle, Clock, ClipboardCheck, QrCode, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { parseControlNumber } from '@/lib/qr-utils';
@@ -55,6 +55,13 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
+  // Edit record
+  const [editingRecord, setEditingRecord] = useState<AuditRecord | null>(null);
+
+  // Delete completed
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const loadData = useCallback(async () => {
     try {
       const [sessionData, recordsData] = await Promise.all([
@@ -91,6 +98,7 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
       // Check if this item was already scanned in this session
       const existingRecord = await api.getAuditRecordsByEquipment(sessionId, equipment.id);
       setIsDuplicate(!!existingRecord);
+      setEditingRecord(existingRecord);
 
       setScannedEquipment(equipment);
       setIsStatusModalOpen(true);
@@ -105,27 +113,37 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
 
     setSavingStatus(true);
     try {
-      const displayName = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous';
-
-      await api.createAuditRecord(
-        sessionId,
-        scannedEquipment.id,
-        scannedEquipment.control_number,
-        quantity,
-        quality,
-        notes
-      );
+      if (editingRecord) {
+        await api.updateAuditRecord(editingRecord.id, scannedEquipment.id, quantity, quality, notes);
+      } else {
+        await api.createAuditRecord(
+          sessionId,
+          scannedEquipment.id,
+          scannedEquipment.control_number,
+          quantity,
+          quality,
+          notes
+        );
+      }
 
       // Reload records
       const recordsData = await api.getAuditRecords(sessionId);
       setRecords(recordsData);
       setScannedEquipment(null);
+      setEditingRecord(null);
     } catch (err) {
       console.error('Failed to save audit record:', err);
       alert('Failed to save audit record.');
     } finally {
       setSavingStatus(false);
     }
+  };
+
+  const handleEditRecord = (record: AuditRecord) => {
+    setScannedEquipment({ id: record.equipment_id, control_number: record.control_number } as Equipment);
+    setEditingRecord(record);
+    setIsDuplicate(true);
+    setIsStatusModalOpen(true);
   };
 
   const handleCompleteAudit = async () => {
@@ -152,6 +170,19 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
       alert('Failed to cancel audit.');
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleDeleteCompleted = async () => {
+    setDeleting(true);
+    try {
+      await api.deleteAuditSession(sessionId);
+      window.location.href = '/audit';
+    } catch (err) {
+      console.error('Failed to delete audit:', err);
+      alert('Failed to delete audit.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -212,17 +243,23 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{records.length}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Items Scanned</p>
             </div>
-            {!session.is_completed && (
+            {session.is_completed ? (
+              <Button
+                variant="ghost"
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
+              >
+                <Trash2 className="w-4 h-4" /> Delete
+              </Button>
+            ) : (
               <div className="flex flex-wrap gap-2">
                 <Button
-                  size="sm"
                   onClick={() => setIsScannerOpen(true)}
                   className="flex items-center gap-2"
                 >
                   <Camera className="w-4 h-4" /> Scan QR
                 </Button>
                 <Button
-                  size="sm"
                   variant="secondary"
                   onClick={() => setIsCompleteModalOpen(true)}
                   className="flex items-center gap-2"
@@ -230,7 +267,6 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
                   <CheckCircle className="w-4 h-4" /> Complete
                 </Button>
                 <Button
-                  size="sm"
                   variant="ghost"
                   onClick={() => setIsCancelModalOpen(true)}
                   className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
@@ -273,6 +309,9 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
                   <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Quality</th>
                   <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Notes</th>
                   <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Scanned At</th>
+                  {!session.is_completed && (
+                    <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium text-right">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -293,6 +332,17 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
                     <td className="px-3 md:px-6 py-3 md:py-4 text-xs text-gray-500 dark:text-gray-400">
                       {format(new Date(record.scanned_at), 'MMM d, h:mm a')}
                     </td>
+                    {!session.is_completed && (
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-right">
+                        <button
+                          onClick={() => handleEditRecord(record)}
+                          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                          title="Edit record"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -315,11 +365,15 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
           onClose={() => {
             setIsStatusModalOpen(false);
             setScannedEquipment(null);
+            setEditingRecord(null);
           }}
           equipment={scannedEquipment}
           auditedBy={user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous'}
           onSave={handleSaveAuditRecord}
           isDuplicate={isDuplicate}
+          initialQuantity={editingRecord?.quantity}
+          initialQuality={editingRecord?.quality}
+          initialNotes={editingRecord?.notes}
         />
       )}
 
@@ -339,6 +393,27 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
             <Button onClick={handleCancelAudit} disabled={cancelling} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white">
               {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {cancelling ? 'Cancelling...' : 'Cancel Session'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Completed Session Modal */}
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Delete Completed Audit">
+        <div className="space-y-4">
+          <p className="text-gray-700 dark:text-gray-300">
+            Are you sure you want to delete this completed audit session?
+          </p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <p className="text-sm text-red-800 dark:text-red-300">
+              This will permanently delete the session and all {records.length} scanned record{records.length !== 1 ? 's' : ''}. This action cannot be undone.
+            </p>
+          </div>
+          <div className="pt-4 flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsDeleteModalOpen(false)}>Keep Session</Button>
+            <Button onClick={handleDeleteCompleted} disabled={deleting} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white">
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {deleting ? 'Deleting...' : 'Delete Session'}
             </Button>
           </div>
         </div>

@@ -238,6 +238,29 @@ export const api = {
     return data as AuditRecord;
   },
 
+  async updateAuditRecord(
+    recordId: string,
+    equipmentId: string,
+    quantity: number,
+    quality: AuditRecord['quality'],
+    notes: string = ''
+  ) {
+    const { data, error } = await supabase
+      .from('audit_records')
+      .update({ quantity, quality, notes })
+      .eq('id', recordId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Also update the equipment's current quantity/quality and create a status log entry
+    await api.addStatusLog(equipmentId, quantity, quality, `Audit update: ${notes || 'Audit record'}`, 'Audit System');
+    await api.updateEquipment(equipmentId, { quantity, quality, updated_at: new Date().toISOString() });
+
+    return data as AuditRecord;
+  },
+
   // App Settings (global)
   async getChurchName(): Promise<string> {
     const { data, error } = await supabase

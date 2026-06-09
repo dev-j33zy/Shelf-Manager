@@ -14,6 +14,9 @@ interface AuditStatusModalProps {
   auditedBy: string;
   onSave: (quantity: number, quality: Quality, notes: string) => Promise<void>;
   isDuplicate?: boolean;
+  initialQuantity?: number;
+  initialQuality?: Quality;
+  initialNotes?: string;
 }
 
 export function AuditStatusModal({
@@ -23,10 +26,13 @@ export function AuditStatusModal({
   auditedBy,
   onSave,
   isDuplicate,
+  initialQuantity,
+  initialQuality,
+  initialNotes,
 }: AuditStatusModalProps) {
-  const [quantity, setQuantity] = useState(equipment.quantity);
-  const [quality, setQuality] = useState<Quality>(equipment.quality);
-  const [notes, setNotes] = useState('');
+  const [quantity, setQuantity] = useState(initialQuantity ?? equipment.quantity);
+  const [quality, setQuality] = useState<Quality>(initialQuality ?? equipment.quality);
+  const [notes, setNotes] = useState(initialNotes ?? '');
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,15 +50,15 @@ export function AuditStatusModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Audit: ${equipment.name}`}>
+    <Modal isOpen={isOpen} onClose={onClose} title={isDuplicate ? `Edit: ${equipment.name}` : `Audit: ${equipment.name}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {isDuplicate && (
           <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-800/50">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-              This item has already been audited in this session.
+              Editing existing audit record for this item.
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-              Recording again will update the previous audit record.
+              Save to update the quantity, quality, and notes.
             </p>
           </div>
         )}
@@ -115,7 +121,7 @@ export function AuditStatusModal({
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={saving} className="flex items-center gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" />}
-            Save Audit Record
+            {isDuplicate ? 'Update Record' : 'Save Audit Record'}
           </Button>
         </div>
       </form>
