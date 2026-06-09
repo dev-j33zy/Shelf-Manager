@@ -33,6 +33,8 @@ export default function Inventory() {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [itemToPrintSingle, setItemToPrintSingle] = useState<Equipment | null>(null);
 
+  const [controlNumberMode, setControlNumberMode] = useState<'manual' | 'auto'>('manual');
+
   const [formData, setFormData] = useState({
     control_number: '',
     name: '',
@@ -83,8 +85,16 @@ export default function Inventory() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.createEquipment(formData);
+      const payload = { ...formData };
+      if (controlNumberMode === 'auto') {
+        const today = new Date();
+        const yyyymmdd = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+        const nextNumber = equipment.length + 1;
+        payload.control_number = `${yyyymmdd}-${nextNumber}`;
+      }
+      await api.createEquipment(payload);
       setIsAddModalOpen(false);
+      setControlNumberMode('manual');
       setFormData({
         control_number: '',
         name: '',
@@ -298,12 +308,42 @@ export default function Inventory() {
 
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New Equipment">
         <form onSubmit={handleAddSubmit} className="space-y-4">
-          <Input 
-            label="Control Number" 
-            required 
-            value={formData.control_number} 
-            onChange={e => setFormData({...formData, control_number: e.target.value})} 
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Control Number</label>
+            <div className="flex gap-4 mb-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="radio"
+                  name="controlNumberMode"
+                  checked={controlNumberMode === 'manual'}
+                  onChange={() => setControlNumberMode('manual')}
+                  className="text-blue-600 focus:ring-blue-500"
+                />
+                Manual
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="radio"
+                  name="controlNumberMode"
+                  checked={controlNumberMode === 'auto'}
+                  onChange={() => setControlNumberMode('auto')}
+                  className="text-blue-600 focus:ring-blue-500"
+                />
+                Auto-generate
+              </label>
+            </div>
+            {controlNumberMode === 'manual' ? (
+              <Input
+                required
+                value={formData.control_number}
+                onChange={e => setFormData({...formData, control_number: e.target.value})}
+              />
+            ) : (
+              <div className="flex h-10 w-full items-center rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-3 text-sm text-gray-500 dark:text-gray-400 font-mono">
+                {new Date().getFullYear()}{String(new Date().getMonth() + 1).padStart(2, '0')}{String(new Date().getDate()).padStart(2, '0')}-{equipment.length + 1}
+              </div>
+            )}
+          </div>
           <Input 
             label="Name" 
             required 

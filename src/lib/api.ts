@@ -2,6 +2,14 @@ import { supabase } from './supabase';
 import { Equipment, Comment, StatusLog, AuditSession, AuditRecord } from './types';
 
 export const api = {
+  async getEquipmentCount() {
+    const { count, error } = await supabase
+      .from('equipment')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+    return count ?? 0;
+  },
   // Equipment
   async getEquipment() {
     const { data, error } = await supabase
