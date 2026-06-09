@@ -163,6 +163,9 @@ CREATE TABLE IF NOT EXISTS audit_records (
   scanned_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Migration: add recorded_by column for existing tables
+ALTER TABLE audit_records ADD COLUMN IF NOT EXISTS recorded_by TEXT DEFAULT '';
+
 -- Enable Row Level Security
 ALTER TABLE audit_records ENABLE ROW LEVEL SECURITY;
 
