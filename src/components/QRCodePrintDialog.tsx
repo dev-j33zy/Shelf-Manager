@@ -25,7 +25,9 @@ type PrintTheme = 'light' | 'dark';
 function overlayLogoOnDataUrl(
   qrDataUrl: string,
   logoUrl: string,
-  qrSize: number
+  qrSize: number,
+  colorMode: ColorMode,
+  logoIsSvg: boolean
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -45,16 +47,32 @@ function overlayLogoOnDataUrl(
         const logoSize = qrSize * 0.2;
         const logoX = (qrSize - logoSize) / 2;
         const logoY = (qrSize - logoSize) / 2;
+        const cornerRadius = 4;
 
         ctx.save();
         ctx.beginPath();
-        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 + 2, 0, Math.PI * 2);
+        ctx.roundRect(logoX - 2, logoY - 2, logoSize + 4, logoSize + 4, cornerRadius + 2);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+        ctx.roundRect(logoX, logoY, logoSize, logoSize, cornerRadius);
         ctx.clip();
-        ctx.drawImage(img, logoX, logoY, logoSize, logoSize);
+
+        if (colorMode === 'monotone' && logoIsSvg) {
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = logoSize;
+          tempCanvas.height = logoSize;
+          const tempCtx = tempCanvas.getContext('2d');
+          if (tempCtx) {
+            tempCtx.drawImage(img, 0, 0, logoSize, logoSize);
+            tempCtx.globalCompositeOperation = 'source-in';
+            tempCtx.fillStyle = '#000000';
+            tempCtx.fillRect(0, 0, logoSize, logoSize);
+            ctx.drawImage(tempCanvas, logoX, logoY);
+          }
+        } else {
+          ctx.drawImage(img, logoX, logoY, logoSize, logoSize);
+        }
         ctx.restore();
 
         resolve(canvas.toDataURL());
@@ -91,7 +109,7 @@ export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogP
         });
 
         if (showLogo && settings.logoUrl) {
-          const withLogo = await overlayLogoOnDataUrl(qrDataUrl, settings.logoUrl, qrSize);
+          const withLogo = await overlayLogoOnDataUrl(qrDataUrl, settings.logoUrl, qrSize, colorMode, settings.logoIsSvg);
           return { controlNumber: item.controlNumber, url: withLogo };
         }
 

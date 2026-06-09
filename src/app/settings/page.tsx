@@ -440,6 +440,9 @@ export default function SettingsPage() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
               Upload your church logo to be displayed in the center of generated QR codes.
             </p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
+              Tip: Use an <strong>.SVG</strong> file to enable monotone recoloring of the logo to match the QR theme.
+            </p>
             <div className="flex items-start gap-4">
               {settings.logoUrl ? (
                 <div className="w-20 h-20 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden flex-shrink-0 bg-white">
@@ -469,8 +472,9 @@ export default function SettingsPage() {
                     try {
                       await api.uploadLogo(file);
                       const url = await api.getLogoUrl();
-                      updateSettings({ logoUrl: url });
-                      setLogoMessage({ type: 'success', text: 'Logo uploaded successfully!' });
+                      const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
+                      updateSettings({ logoUrl: url, logoIsSvg: isSvg });
+                      setLogoMessage({ type: 'success', text: isSvg ? 'SVG logo uploaded! Monotone mode support enabled.' : 'Logo uploaded successfully! For monotone support, use an SVG file.' });
                     } catch (err) {
                       console.error('Failed to upload logo:', err);
                       setLogoMessage({
@@ -503,7 +507,7 @@ export default function SettingsPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      updateSettings({ logoUrl: '' });
+                      updateSettings({ logoUrl: '', logoIsSvg: false });
                       setLogoMessage({ type: 'info', text: 'Logo removed.' });
                     }}
                     className="ml-2"

@@ -61,16 +61,32 @@ export function QRCode({
           const logoSize = size * 0.2;
           const logoX = (size - logoSize) / 2;
           const logoY = (size - logoSize) / 2;
+          const cornerRadius = 4;
 
           ctx.save();
           ctx.beginPath();
-          ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 + 2, 0, Math.PI * 2);
+          ctx.roundRect(logoX - 2, logoY - 2, logoSize + 4, logoSize + 4, cornerRadius + 2);
           ctx.fillStyle = lightColor;
           ctx.fill();
           ctx.beginPath();
-          ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+          ctx.roundRect(logoX, logoY, logoSize, logoSize, cornerRadius);
           ctx.clip();
-          ctx.drawImage(logoRef.current, logoX, logoY, logoSize, logoSize);
+
+          if (colorMode === 'monotone' && settings.logoIsSvg) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = logoSize;
+            tempCanvas.height = logoSize;
+            const tempCtx = tempCanvas.getContext('2d');
+            if (tempCtx) {
+              tempCtx.drawImage(logoRef.current, 0, 0, logoSize, logoSize);
+              tempCtx.globalCompositeOperation = 'source-in';
+              tempCtx.fillStyle = darkColor;
+              tempCtx.fillRect(0, 0, logoSize, logoSize);
+              ctx.drawImage(tempCanvas, logoX, logoY);
+            }
+          } else {
+            ctx.drawImage(logoRef.current, logoX, logoY, logoSize, logoSize);
+          }
           ctx.restore();
         }
       }

@@ -8,6 +8,7 @@ interface Settings {
   theme: Theme;
   devToolsEnabled: boolean;
   logoUrl: string;
+  logoIsSvg: boolean;
   churchName: string;
 }
 
@@ -34,6 +35,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       theme: 'system',
       devToolsEnabled: false,
       logoUrl: '',
+      logoIsSvg: false,
       churchName: 'Property of UCCP Sukat Evangelical Church',
     };
   });
