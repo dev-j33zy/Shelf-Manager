@@ -15,7 +15,8 @@ export function QRCodeScanner({ onScan, onClose, isOpen }: QRCodeScannerProps) {
   const [initializing, setInitializing] = useState(false);
   const [scanning, setScanning] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerId = 'qr-scanner-container';
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerId] = useState(() => 'qr-scanner-' + Math.random().toString(36).slice(2));
 
   useEffect(() => {
     if (!isOpen) return;
@@ -23,9 +24,13 @@ export function QRCodeScanner({ onScan, onClose, isOpen }: QRCodeScannerProps) {
     let mounted = true;
     setInitializing(true);
     setError(null);
+    setScanning(false);
 
     const startScanner = async () => {
       try {
+        // Ensure container is in the DOM before starting
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         const scanner = new Html5Qrcode(containerId);
         scannerRef.current = scanner;
 
@@ -70,7 +75,7 @@ export function QRCodeScanner({ onScan, onClose, isOpen }: QRCodeScannerProps) {
         scannerRef.current = null;
       }
     };
-  }, [isOpen, onScan]);
+  }, [isOpen, onScan, containerId]);
 
   if (!isOpen) return null;
 
@@ -90,18 +95,27 @@ export function QRCodeScanner({ onScan, onClose, isOpen }: QRCodeScannerProps) {
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="relative">
+          {/* Scanner container - always visible when open */}
+          <div
+            id={containerId}
+            ref={containerRef}
+            className="w-full"
+          />
+
+          {/* Loading overlay */}
           {initializing && (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/80 z-10 min-h-[300px]">
               <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-              <p className="text-sm text-gray-400">Initializing camera...</p>
+              <p className="text-sm text-gray-300 mt-3">Initializing camera...</p>
             </div>
           )}
 
+          {/* Error state */}
           {error && !initializing && (
-            <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <div className="flex flex-col items-center justify-center py-12 gap-3 min-h-[300px]">
               <CameraOff className="w-10 h-10 text-red-400" />
-              <p className="text-sm text-red-400 text-center">{error}</p>
+              <p className="text-sm text-red-400 text-center px-4">{error}</p>
               <button
                 onClick={onClose}
                 className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm hover:bg-gray-600 transition-colors"
@@ -110,18 +124,15 @@ export function QRCodeScanner({ onScan, onClose, isOpen }: QRCodeScannerProps) {
               </button>
             </div>
           )}
+        </div>
 
-          <div
-            id={containerId}
-            className={initializing || error ? 'hidden' : 'w-full'}
-          />
-
-          {scanning && !error && (
-            <p className="text-center text-sm text-gray-400 mt-3">
+        {scanning && !error && (
+          <div className="px-4 pb-4">
+            <p className="text-center text-sm text-gray-400">
               Point your camera at a QR code
             </p>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

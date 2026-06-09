@@ -98,6 +98,9 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
     recorded_by: '',
   });
 
+  // Print state
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+
   const loadData = useCallback(async () => {
     try {
       const [eqData, commentsData, logsData] = await Promise.all([
@@ -202,9 +205,6 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
       </div>
     );
   }
-
-  // Print state
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   return (
     <div className="p-2 sm:p-4 md:p-8 max-w-7xl mx-auto">
