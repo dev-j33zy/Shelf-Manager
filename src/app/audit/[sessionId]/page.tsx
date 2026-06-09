@@ -11,6 +11,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { ArrowLeft, Loader2, Camera, CheckCircle, Clock, ClipboardCheck, QrCode } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { parseControlNumber } from '@/lib/qr-utils';
 
 const qualityOrder: Quality[] = ['Broken', 'Poor', 'Fair', 'Good', 'New'];
 
@@ -79,7 +80,8 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
     setIsScannerOpen(false);
 
     try {
-      const equipment = await api.getEquipmentByControlNumber(controlNumber);
+      const { base } = parseControlNumber(controlNumber);
+      const equipment = await api.getEquipmentByControlNumber(base);
 
       if (!equipment) {
         alert(`No equipment found with control number: ${controlNumber}`);

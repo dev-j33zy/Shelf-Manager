@@ -8,9 +8,10 @@ import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
 import { QRCodePrintDialog } from '@/components/QRCodePrintDialog';
 import { QRCodeScanner } from '@/components/QRCodeScanner';
-import { Plus, Search, Loader2, Eye, Trash2, QrCode, Printer, Camera } from 'lucide-react';
+import { Plus, Search, Loader2, Eye, Trash2, QrCode, Printer, Camera, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { parseControlNumber, formatUnitControlNumber } from '@/lib/qr-utils';
 
 export default function Inventory() {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
@@ -32,6 +33,7 @@ export default function Inventory() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [itemToPrintSingle, setItemToPrintSingle] = useState<Equipment | null>(null);
+  const [printByUnit, setPrintByUnit] = useState(false);
 
   const [controlNumberMode, setControlNumberMode] = useState<'manual' | 'auto'>('manual');
 
@@ -67,11 +69,12 @@ export default function Inventory() {
     setIsScannerOpen(false);
     setScanning(true);
     try {
-      const equipment = await api.getEquipmentByControlNumber(controlNumber);
+      const { base } = parseControlNumber(controlNumber);
+      const equipment = await api.getEquipmentByControlNumber(base);
       if (equipment) {
         router.push(`/inventory/${equipment.id}`);
       } else {
-        alert(`No equipment found with control number: ${controlNumber}`);
+        alert(`No equipment found with control number: ${base}`);
       }
     } catch (err) {
       console.error('Failed to look up equipment:', err);
@@ -156,7 +159,13 @@ export default function Inventory() {
 
   const selectedItems = equipment
     .filter(e => selectedIds.has(e.id))
-    .map(e => ({ controlNumber: e.control_number, name: e.name }));
+    .flatMap(e => printByUnit && e.quantity > 1
+      ? Array.from({ length: e.quantity }, (_, i) => ({
+          controlNumber: formatUnitControlNumber(e.control_number, i + 1, e.quantity),
+          name: e.name,
+        }))
+      : [{ controlNumber: e.control_number, name: e.name }]
+    );
 
   return (
     <div className="p-2 sm:p-4 md:p-8 max-w-7xl mx-auto">
@@ -190,10 +199,22 @@ export default function Inventory() {
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800/50 flex items-center justify-between">
-            <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-              {selectedIds.size} item{selectedIds.size !== 1 ? 's' : ''} selected
-            </span>
+          <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800/50 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                {selectedIds.size} item{selectedIds.size !== 1 ? 's' : ''} selected
+              </span>
+              <label className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={printByUnit}
+                  onChange={(e) => setPrintByUnit(e.target.checked)}
+                  className="rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                />
+                <Layers className="w-3 h-3" />
+                Print individual codes per unit
+              </label>
+            </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -205,7 +226,10 @@ export default function Inventory() {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => setSelectedIds(new Set())}
+                onClick={() => {
+                  setSelectedIds(new Set());
+                  setPrintByUnit(false);
+                }}
               >
                 Clear
               </Button>
@@ -421,7 +445,13 @@ export default function Inventory() {
         }}
         items={
           itemToPrintSingle
-            ? [{ controlNumber: itemToPrintSingle.control_number, name: itemToPrintSingle.name }]
+            ? (printByUnit && itemToPrintSingle.quantity > 1
+                ? Array.from({ length: itemToPrintSingle.quantity }, (_, i) => ({
+                    controlNumber: formatUnitControlNumber(itemToPrintSingle.control_number, i + 1, itemToPrintSingle.quantity),
+                    name: itemToPrintSingle.name,
+                  }))
+                : [{ controlNumber: itemToPrintSingle.control_number, name: itemToPrintSingle.name }]
+              )
             : selectedItems
         }
       />
