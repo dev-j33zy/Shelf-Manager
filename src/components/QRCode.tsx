@@ -100,7 +100,6 @@ export function QRCode({
     }
 
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     img.onload = () => {
       logoRef.current = img;
       setLogoLoaded(true);
