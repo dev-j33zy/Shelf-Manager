@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 import { QRCodeScanner } from '@/components/QRCodeScanner';
 import { AuditStatusModal } from '@/components/AuditStatusModal';
+import { AuditSummary } from '@/components/AuditSummary';
 import { useAuth } from '@/components/AuthProvider';
 import { ArrowLeft, Loader2, Camera, CheckCircle, Clock, ClipboardCheck, QrCode, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -348,6 +349,13 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Audit Summary (only when completed) */}
+      {session.is_completed && (
+        <div className="mb-6">
+          <AuditSummary session={session} records={records} />
         </div>
       )}
 
