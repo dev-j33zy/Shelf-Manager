@@ -44,7 +44,31 @@ An Enterprise Inventory System built with Next.js (App Router), Tailwind CSS, an
 5. **Set up Supabase Storage (for logo upload):**
    - Go to Supabase Dashboard → Storage → New bucket
    - Name: `logos`, Public bucket: **enabled**
-   - Add policy: Allow SELECT for all users on the `logos` bucket
+   - Add the following policies to the `logos` bucket (go to Storage → `logos` → Policies):
+
+     **SELECT** (public read):
+     ```sql
+     CREATE POLICY "logos_select"
+     ON storage.objects FOR SELECT
+     USING (bucket_id = 'logos');
+     ```
+
+     **INSERT** (authenticated users):
+     ```sql
+     CREATE POLICY "logos_insert"
+     ON storage.objects FOR INSERT
+     TO authenticated
+     WITH CHECK (bucket_id = 'logos');
+     ```
+
+     **UPDATE** (authenticated users, for overwriting logo):
+     ```sql
+     CREATE POLICY "logos_update"
+     ON storage.objects FOR UPDATE
+     TO authenticated
+     USING (bucket_id = 'logos')
+     WITH CHECK (bucket_id = 'logos');
+     ```
 
 6. **Start the Development Server:**
    ```bash

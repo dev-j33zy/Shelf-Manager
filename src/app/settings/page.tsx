@@ -256,7 +256,7 @@ export default function SettingsPage() {
                       console.error('Failed to upload logo:', err);
                       setLogoMessage({
                         type: 'error',
-                        text: 'Failed to upload logo. Make sure you have a "logos" bucket in Supabase Storage with public access.',
+                        text: `Failed to upload logo. Make sure the "logos" bucket has INSERT and UPDATE policies for authenticated users (Supabase Dashboard → Storage → logos → Policies).`,
                       });
                     } finally {
                       setLogoUploading(false);
