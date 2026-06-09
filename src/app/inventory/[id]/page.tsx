@@ -6,8 +6,10 @@ import { Equipment, Comment, Quality, StatusLog } from '@/lib/types';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
-import { ArrowLeft, Loader2, Edit, MessageSquare, Package, Save, ClipboardList, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ArrowLeft, Loader2, Edit, MessageSquare, Package, Save, ClipboardList, TrendingUp, TrendingDown, Minus, Printer, QrCode } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { QRCode } from '@/components/QRCode';
+import { QRCodePrintDialog } from '@/components/QRCodePrintDialog';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -201,6 +203,9 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
     );
   }
 
+  // Print state
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+
   return (
     <div className="p-2 sm:p-4 md:p-8 max-w-7xl mx-auto">
       <Link href="/inventory" className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 transition-colors">
@@ -235,6 +240,14 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
                 >
                   <ClipboardList className="w-4 h-4" /> <span className="hidden sm:inline">Record Status</span>
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsPrintDialogOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Print QR</span>
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2">
                   <Edit className="w-4 h-4" /> <span className="hidden sm:inline">Edit</span>
                 </Button>
@@ -260,6 +273,30 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
               <div className="col-span-2 text-xs text-gray-400 dark:text-gray-500 mt-2">
                 Last updated: {format(new Date(equipment.updated_at), 'PPpp')}
               </div>
+            </div>
+          </div>
+
+          {/* QR Code Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="px-4 md:px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50">
+              <QrCode className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <h2 className="font-semibold text-gray-800 dark:text-gray-200">QR Code</h2>
+            </div>
+            <div className="p-4 md:p-6 flex flex-col items-center">
+              <QRCode
+                controlNumber={equipment.control_number}
+                size={180}
+                showLogo
+                showText
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPrintDialogOpen(true)}
+                className="mt-4 flex items-center gap-2"
+              >
+                <Printer className="w-4 h-4" /> Print QR Code
+              </Button>
             </div>
           </div>
 
@@ -560,6 +597,13 @@ export default function EquipmentDetail({ params }: { params: Promise<{ id: stri
           </div>
         </form>
       </Modal>
+
+      {/* Print QR Code Dialog */}
+      <QRCodePrintDialog
+        isOpen={isPrintDialogOpen}
+        onClose={() => setIsPrintDialogOpen(false)}
+        items={equipment ? [{ controlNumber: equipment.control_number, name: equipment.name }] : []}
+      />
     </div>
   );
 }

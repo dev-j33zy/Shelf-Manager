@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSettings } from '@/components/SettingsProvider';
-import { Moon, Sun, Monitor, Wrench, User, Trash2, LogOut, Loader2 } from 'lucide-react';
+import { Moon, Sun, Monitor, Wrench, User, Trash2, LogOut, Loader2, Image, Upload } from 'lucide-react';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
+import { api } from '@/lib/api';
 
 export default function SettingsPage() {
   const { settings, updateSettings } = useSettings();
@@ -19,6 +20,12 @@ export default function SettingsPage() {
   const [username, setUsername] = useState(user?.user_metadata?.username || '');
   const [phone, setPhone] = useState(user?.user_metadata?.phone || '');
   
+  // QR Settings States
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoMessage, setLogoMessage] = useState({ type: '', text: '' });
+  const [churchName, setChurchName] = useState(settings.churchName);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountMessage, setAccountMessage] = useState({ type: '', text: '' });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -185,6 +192,137 @@ export default function SettingsPage() {
             <Button onClick={() => setIsDeleteModalOpen(true)} variant="danger" disabled={accountLoading} className="flex items-center gap-2">
               <Trash2 className="w-4 h-4" /> Delete Account
             </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* QR Code Settings */}
+      <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+          <Image className="w-5 h-5" /> QR Code Settings
+        </h2>
+
+        {logoMessage.text && (
+          <div className={`p-4 rounded-lg mb-6 text-sm ${
+            logoMessage.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400' :
+            logoMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100 dark:bg-green-900/30 dark:border-green-800/50 dark:text-green-400' :
+            'bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400'
+          }`}>
+            {logoMessage.text}
+          </div>
+        )}
+
+        <div className="space-y-6 max-w-xl">
+          {/* Church Logo */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Church Logo
+            </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Upload your church logo to be displayed in the center of generated QR codes.
+            </p>
+            <div className="flex items-start gap-4">
+              {settings.logoUrl ? (
+                <div className="w-20 h-20 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden flex-shrink-0 bg-white">
+                  <img
+                    src={settings.logoUrl}
+                    alt="Church Logo"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center justify-center flex-shrink-0 bg-gray-50 dark:bg-gray-700">
+                  <Image className="w-8 h-8 text-gray-400" />
+                </div>
+              )}
+              <div className="flex-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+
+                    setLogoUploading(true);
+                    setLogoMessage({ type: '', text: '' });
+                    try {
+                      await api.uploadLogo(file);
+                      const url = await api.getLogoUrl();
+                      updateSettings({ logoUrl: url });
+                      setLogoMessage({ type: 'success', text: 'Logo uploaded successfully!' });
+                    } catch (err) {
+                      console.error('Failed to upload logo:', err);
+                      setLogoMessage({
+                        type: 'error',
+                        text: 'Failed to upload logo. Make sure you have a "logos" bucket in Supabase Storage with public access.',
+                      });
+                    } finally {
+                      setLogoUploading(false);
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={logoUploading}
+                  className="flex items-center gap-2"
+                >
+                  {logoUploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  {settings.logoUrl ? 'Change Logo' : 'Upload Logo'}
+                </Button>
+                {settings.logoUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      updateSettings({ logoUrl: '' });
+                      setLogoMessage({ type: 'info', text: 'Logo removed.' });
+                    }}
+                    className="ml-2"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Church Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Church Name / Footer Text
+            </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              This text will appear below each QR code and on printed labels.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="flex-1 h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={churchName}
+                onChange={(e) => setChurchName(e.target.value)}
+                placeholder="e.g. Property of UCCP Sukat Evangelical Church"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  updateSettings({ churchName });
+                  setLogoMessage({ type: 'success', text: 'Church name updated!' });
+                }}
+              >
+                Save
+              </Button>
+            </div>
           </div>
         </div>
       </div>

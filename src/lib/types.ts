@@ -29,3 +29,23 @@ export interface StatusLog {
   recorded_by: string;
   recorded_at: string;
 }
+
+export interface AuditSession {
+  id: string;
+  title: string;
+  audited_by: string;
+  started_at: string;
+  completed_at: string | null;
+  is_completed: boolean;
+}
+
+export interface AuditRecord {
+  id: string;
+  audit_session_id: string;
+  equipment_id: string;
+  control_number: string;
+  quantity: number;
+  quality: Quality;
+  notes: string;
+  scanned_at: string;
+}

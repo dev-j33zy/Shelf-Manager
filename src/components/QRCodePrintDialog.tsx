@@ -1,0 +1,284 @@
+"use client";
+
+import React, { useRef, useState } from 'react';
+import { Modal } from './Modal';
+import { Button } from './Button';
+import { QRCode } from './QRCode';
+import { X } from 'lucide-react';
+
+interface PrintItem {
+  controlNumber: string;
+  name: string;
+}
+
+interface QRCodePrintDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  items: PrintItem[];
+}
+
+type GridSize = 1 | 2 | 3 | 4;
+type ColorMode = 'color' | 'monotone';
+type PrintTheme = 'light' | 'dark';
+
+export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogProps) {
+  const [gridSize, setGridSize] = useState<GridSize>(2);
+  const [colorMode, setColorMode] = useState<ColorMode>('color');
+  const [printTheme, setPrintTheme] = useState<PrintTheme>('light');
+  const [showLogo, setShowLogo] = useState(true);
+  const [showText, setShowText] = useState(true);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const qrSize = gridSize === 1 ? 250 : gridSize === 2 ? 200 : gridSize === 3 ? 150 : 120;
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const logoStyles = printTheme === 'dark'
+      ? 'body { background: #1f2937; color: #f3f4f6; }'
+      : 'body { background: #ffffff; color: #111827; }';
+
+    const gridCols = gridSize === 1 ? 1 : gridSize === 2 ? 2 : gridSize === 3 ? 3 : 4;
+
+    const itemsHtml = items.map((item, i) => `
+      <div class="qr-item">
+        <div class="qr-code-wrapper">
+          <canvas id="qr-canvas-${i}" width="${qrSize}" height="${qrSize}"></canvas>
+        </div>
+        <div class="qr-label">${item.name}</div>
+        <div class="qr-control-number">${item.controlNumber}</div>
+        ${showText ? `<div class="qr-church-text">Property of UCCP Sukat Evangelical Church</div>` : ''}
+      </div>
+    `).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Print QR Codes</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          ${logoStyles}
+          @page { margin: 10mm; }
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(${gridCols}, 1fr);
+            gap: 16px;
+            page-break-inside: avoid;
+          }
+          .qr-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid ${printTheme === 'dark' ? '#374151' : '#e5e7eb'};
+            border-radius: 8px;
+            break-inside: avoid;
+          }
+          .qr-code-wrapper {
+            width: ${qrSize}px;
+            height: ${qrSize}px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .qr-label {
+            margin-top: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            color: ${printTheme === 'dark' ? '#f3f4f6' : '#111827'};
+          }
+          .qr-control-number {
+            font-size: 9px;
+            font-family: monospace;
+            color: ${printTheme === 'dark' ? '#9ca3af' : '#6b7280'};
+            margin-top: 2px;
+          }
+          .qr-church-text {
+            margin-top: 6px;
+            font-size: 8px;
+            text-align: center;
+            color: ${printTheme === 'dark' ? '#9ca3af' : '#6b7280'};
+          }
+          @media print {
+            body { padding: 0; }
+            .qr-item { border: 1px solid #ddd; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="qr-grid">
+          ${itemsHtml}
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"><\/script>
+        <script>
+          const items = ${JSON.stringify(items)};
+          const colorMode = ${JSON.stringify(colorMode)};
+          const printTheme = ${JSON.stringify(printTheme)};
+          const qrSize = ${qrSize};
+
+          items.forEach((item, i) => {
+            const canvas = document.getElementById('qr-canvas-' + i);
+            if (!canvas) return;
+            const darkColor = colorMode === 'monotone' ? '#000000' : (printTheme === 'dark' ? '#ffffff' : '#000000');
+            const lightColor = colorMode === 'monotone' ? '#ffffff' : (printTheme === 'dark' ? '#1f2937' : '#ffffff');
+            QRCode.toCanvas(canvas, item.controlNumber, {
+              width: qrSize,
+              margin: 2,
+              color: { dark: darkColor, light: lightColor }
+            });
+          });
+
+          setTimeout(() => window.print(), 1000);
+        <\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Print QR Codes">
+      <div className="space-y-5">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Configure how your QR codes will be printed. Print {items.length} item{items.length !== 1 ? 's' : ''}.
+        </p>
+
+        {/* Preview */}
+        <div
+          ref={printRef}
+          className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex flex-wrap gap-3 justify-center"
+        >
+          {items.slice(0, 4).map((item) => (
+            <div key={item.controlNumber} className="flex flex-col items-center">
+              <QRCode
+                controlNumber={item.controlNumber}
+                size={80}
+                showLogo={showLogo}
+                showText={false}
+                colorMode={colorMode}
+                theme={printTheme}
+              />
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 truncate max-w-[80px] text-center">
+                {item.name}
+              </span>
+            </div>
+          ))}
+          {items.length > 4 && (
+            <div className="flex items-center justify-center w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-lg">
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">+{items.length - 4} more</span>
+            </div>
+          )}
+        </div>
+
+        {/* Grid Size */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Layout</label>
+          <div className="flex gap-2">
+            {([1, 2, 3, 4] as GridSize[]).map((size) => (
+              <button
+                key={size}
+                onClick={() => setGridSize(size)}
+                className={`flex-1 px-3 py-2 rounded-md border text-sm transition-all ${
+                  gridSize === size
+                    ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'
+                }`}
+              >
+                {size}x{size}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Color Mode */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color</label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setColorMode('color')}
+              className={`flex-1 px-3 py-2 rounded-md border text-sm transition-all ${
+                colorMode === 'color'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'
+              }`}
+            >
+              Colored
+            </button>
+            <button
+              onClick={() => setColorMode('monotone')}
+              className={`flex-1 px-3 py-2 rounded-md border text-sm transition-all ${
+                colorMode === 'monotone'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'
+              }`}
+            >
+              Monotone
+            </button>
+          </div>
+        </div>
+
+        {/* Theme */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPrintTheme('light')}
+              className={`flex-1 px-3 py-2 rounded-md border text-sm transition-all ${
+                printTheme === 'light'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'
+              }`}
+            >
+              Light
+            </button>
+            <button
+              onClick={() => setPrintTheme('dark')}
+              className={`flex-1 px-3 py-2 rounded-md border text-sm transition-all ${
+                printTheme === 'dark'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'
+              }`}
+            >
+              Dark
+            </button>
+          </div>
+        </div>
+
+        {/* Toggles */}
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              checked={showLogo}
+              onChange={(e) => setShowLogo(e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Show Logo
+          </label>
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              checked={showText}
+              onChange={(e) => setShowText(e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Show Church Text
+          </label>
+        </div>
+
+        <div className="pt-2 flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="button" onClick={handlePrint} className="flex items-center gap-2">
+            Print QR Codes
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}

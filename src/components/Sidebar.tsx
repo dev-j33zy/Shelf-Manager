@@ -1,11 +1,12 @@
 import React from 'react';
 import Link from 'next/link';
-import { Package, LayoutDashboard, Settings, List, X } from 'lucide-react';
+import { Package, LayoutDashboard, Settings, List, QrCode, ClipboardCheck, X } from 'lucide-react';
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
     { name: 'Inventory', icon: List, href: '/inventory' },
+    { name: 'Audit', icon: ClipboardCheck, href: '/audit' },
   ];
 
   return (

@@ -7,6 +7,8 @@ type Theme = 'light' | 'dark' | 'system';
 interface Settings {
   theme: Theme;
   devToolsEnabled: boolean;
+  logoUrl: string;
+  churchName: string;
 }
 
 interface SettingsContextType {
@@ -31,6 +33,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     return {
       theme: 'system',
       devToolsEnabled: false,
+      logoUrl: '',
+      churchName: 'Property of UCCP Sukat Evangelical Church',
     };
   });
 

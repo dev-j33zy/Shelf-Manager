@@ -6,7 +6,8 @@ import { Equipment, Quality } from '@/lib/types';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
-import { Plus, Search, Loader2, Eye, Trash2 } from 'lucide-react';
+import { QRCodePrintDialog } from '@/components/QRCodePrintDialog';
+import { Plus, Search, Loader2, Eye, Trash2, QrCode, Printer } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Inventory() {
@@ -14,10 +15,15 @@ export default function Inventory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  // Bulk selection & print
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [itemToPrintSingle, setItemToPrintSingle] = useState<Equipment | null>(null);
 
   const [formData, setFormData] = useState({
     control_number: '',
@@ -44,7 +50,6 @@ export default function Inventory() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 
@@ -85,11 +90,37 @@ export default function Inventory() {
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(filtered.map(e => e.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    const next = new Set(selectedIds);
+    if (checked) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
+    setSelectedIds(next);
+  };
+
+  const handleBulkPrint = () => {
+    setIsPrintDialogOpen(true);
+  };
+
   const filtered = equipment.filter(e => 
     e.name.toLowerCase().includes(search.toLowerCase()) || 
     e.control_number.toLowerCase().includes(search.toLowerCase()) ||
     e.department.toLowerCase().includes(search.toLowerCase())
   );
+
+  const selectedItems = equipment
+    .filter(e => selectedIds.has(e.id))
+    .map(e => ({ controlNumber: e.control_number, name: e.name }));
 
   return (
     <div className="p-2 sm:p-4 md:p-8 max-w-7xl mx-auto">
@@ -112,6 +143,30 @@ export default function Inventory() {
           />
         </div>
 
+        {selectedIds.size > 0 && (
+          <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800/50 flex items-center justify-between">
+            <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+              {selectedIds.size} item{selectedIds.size !== 1 ? 's' : ''} selected
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleBulkPrint}
+                className="flex items-center gap-2"
+              >
+                <Printer className="w-4 h-4" /> Print QR Codes
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
+
         {error ? (
           <div className="p-8 text-center text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800/50">
             <p className="font-semibold mb-2">Database connection error</p>
@@ -127,6 +182,14 @@ export default function Inventory() {
             <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
               <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-200">
                 <tr>
+                  <th className="px-3 md:px-6 py-2.5 md:py-3 w-10">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                    />
+                  </th>
                   <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Control No.</th>
                   <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Name</th>
                   <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Qty</th>
@@ -138,6 +201,14 @@ export default function Inventory() {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {filtered.map(item => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td className="px-3 md:px-6 py-3 md:py-4">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={selectedIds.has(item.id)}
+                        onChange={(e) => handleSelectOne(item.id, e.target.checked)}
+                      />
+                    </td>
                     <td className="px-3 md:px-6 py-3 md:py-4 font-mono text-xs text-gray-900 dark:text-gray-300">{item.control_number}</td>
                     <td className="px-3 md:px-6 py-3 md:py-4 font-medium text-gray-900 dark:text-white">{item.name}</td>
                     <td className="px-3 md:px-6 py-3 md:py-4">{item.quantity}</td>
@@ -156,6 +227,16 @@ export default function Inventory() {
                     </td>
                     <td className="px-3 md:px-6 py-3 md:py-4 text-right">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setItemToPrintSingle(item);
+                            setIsPrintDialogOpen(true);
+                          }}
+                          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                          title="Print QR Code"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </button>
                         <Link href={`/inventory/${item.id}`} className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded hover:bg-blue-50 dark:hover:bg-blue-900/30">
                           <Eye className="w-4 h-4" />
                         </Link>
@@ -168,7 +249,7 @@ export default function Inventory() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
                       No equipment found.
                     </td>
                   </tr>
@@ -247,6 +328,20 @@ export default function Inventory() {
           </div>
         </div>
       </Modal>
+
+      {/* Print QR Code Dialog */}
+      <QRCodePrintDialog
+        isOpen={isPrintDialogOpen}
+        onClose={() => {
+          setIsPrintDialogOpen(false);
+          setItemToPrintSingle(null);
+        }}
+        items={
+          itemToPrintSingle
+            ? [{ controlNumber: itemToPrintSingle.control_number, name: itemToPrintSingle.name }]
+            : selectedItems
+        }
+      />
     </div>
   );
 }
