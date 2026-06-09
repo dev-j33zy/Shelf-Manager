@@ -7,8 +7,10 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
 import { QRCodePrintDialog } from '@/components/QRCodePrintDialog';
-import { Plus, Search, Loader2, Eye, Trash2, QrCode, Printer } from 'lucide-react';
+import { QRCodeScanner } from '@/components/QRCodeScanner';
+import { Plus, Search, Loader2, Eye, Trash2, QrCode, Printer, Camera } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Inventory() {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
@@ -19,6 +21,12 @@ export default function Inventory() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  const router = useRouter();
+
+  // QR Scanner (normal mode)
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   // Bulk selection & print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -52,6 +60,24 @@ export default function Inventory() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const handleScan = async (controlNumber: string) => {
+    setIsScannerOpen(false);
+    setScanning(true);
+    try {
+      const equipment = await api.getEquipmentByControlNumber(controlNumber);
+      if (equipment) {
+        router.push(`/inventory/${equipment.id}`);
+      } else {
+        alert(`No equipment found with control number: ${controlNumber}`);
+      }
+    } catch (err) {
+      console.error('Failed to look up equipment:', err);
+      alert('Failed to look up equipment.');
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,9 +152,19 @@ export default function Inventory() {
     <div className="p-2 sm:p-4 md:p-8 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Inventory</h1>
-        <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" /> New Item
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsScannerOpen(true)}
+            disabled={scanning}
+            className="flex items-center gap-2"
+          >
+            <Camera className="w-4 h-4" /> Scan QR
+          </Button>
+          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" /> New Item
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6">
@@ -328,6 +364,13 @@ export default function Inventory() {
           </div>
         </div>
       </Modal>
+
+      {/* QR Scanner */}
+      <QRCodeScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleScan}
+      />
 
       {/* Print QR Code Dialog */}
       <QRCodePrintDialog

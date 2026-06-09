@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { QRCode } from './QRCode';
-import { X } from 'lucide-react';
+import QRCodeLib from 'qrcode';
+import { useSettings } from './SettingsProvider';
 
 interface PrintItem {
   controlNumber: string;
@@ -28,27 +29,46 @@ export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogP
   const [showLogo, setShowLogo] = useState(true);
   const [showText, setShowText] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
+  const { settings } = useSettings();
 
   const qrSize = gridSize === 1 ? 250 : gridSize === 2 ? 200 : gridSize === 3 ? 150 : 120;
 
-  const handlePrint = () => {
+  const generateDataUrls = useCallback(async () => {
+    const darkColor = colorMode === 'monotone' ? '#000000' : (printTheme === 'dark' ? '#ffffff' : '#000000');
+    const lightColor = colorMode === 'monotone' ? '#ffffff' : (printTheme === 'dark' ? '#1f2937' : '#ffffff');
+
+    const urls = await Promise.all(
+      items.map(async (item) => {
+        const url = await QRCodeLib.toDataURL(item.controlNumber, {
+          width: qrSize,
+          margin: 2,
+          color: { dark: darkColor, light: lightColor },
+        });
+        return { controlNumber: item.controlNumber, url };
+      })
+    );
+    return urls;
+  }, [items, qrSize, colorMode, printTheme]);
+
+  const handlePrint = async () => {
+    const dataUrls = await generateDataUrls();
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const logoStyles = printTheme === 'dark'
-      ? 'body { background: #1f2937; color: #f3f4f6; }'
-      : 'body { background: #ffffff; color: #111827; }';
+    const bgColor = printTheme === 'dark' ? '#1f2937' : '#ffffff';
+    const textColor = printTheme === 'dark' ? '#f3f4f6' : '#111827';
+    const mutedColor = printTheme === 'dark' ? '#9ca3af' : '#6b7280';
+    const borderColor = printTheme === 'dark' ? '#374151' : '#e5e7eb';
 
     const gridCols = gridSize === 1 ? 1 : gridSize === 2 ? 2 : gridSize === 3 ? 3 : 4;
 
-    const itemsHtml = items.map((item, i) => `
+    const itemsHtml = dataUrls.map((item) => `
       <div class="qr-item">
         <div class="qr-code-wrapper">
-          <canvas id="qr-canvas-${i}" width="${qrSize}" height="${qrSize}"></canvas>
+          <img src="${item.url}" width="${qrSize}" height="${qrSize}" alt="QR Code" />
         </div>
-        <div class="qr-label">${item.name}</div>
         <div class="qr-control-number">${item.controlNumber}</div>
-        ${showText ? `<div class="qr-church-text">Property of UCCP Sukat Evangelical Church</div>` : ''}
+        ${showText ? `<div class="qr-church-text">${settings.churchName || 'Property of UCCP Sukat Evangelical Church'}</div>` : ''}
       </div>
     `).join('');
 
@@ -59,9 +79,8 @@ export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogP
         <title>Print QR Codes</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          ${logoStyles}
+          body { background: ${bgColor}; color: ${textColor}; font-family: Arial, sans-serif; padding: 20px; }
           @page { margin: 10mm; }
-          body { font-family: Arial, sans-serif; padding: 20px; }
           .qr-grid {
             display: grid;
             grid-template-columns: repeat(${gridCols}, 1fr);
@@ -73,7 +92,7 @@ export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogP
             flex-direction: column;
             align-items: center;
             padding: 12px;
-            border: 1px solid ${printTheme === 'dark' ? '#374151' : '#e5e7eb'};
+            border: 1px solid ${borderColor};
             border-radius: 8px;
             break-inside: avoid;
           }
@@ -84,24 +103,20 @@ export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogP
             align-items: center;
             justify-content: center;
           }
-          .qr-label {
-            margin-top: 8px;
-            font-size: 11px;
-            font-weight: 600;
-            text-align: center;
-            color: ${printTheme === 'dark' ? '#f3f4f6' : '#111827'};
+          .qr-code-wrapper img {
+            display: block;
           }
           .qr-control-number {
+            margin-top: 6px;
             font-size: 9px;
             font-family: monospace;
-            color: ${printTheme === 'dark' ? '#9ca3af' : '#6b7280'};
-            margin-top: 2px;
+            color: ${mutedColor};
           }
           .qr-church-text {
             margin-top: 6px;
             font-size: 8px;
             text-align: center;
-            color: ${printTheme === 'dark' ? '#9ca3af' : '#6b7280'};
+            color: ${mutedColor};
           }
           @media print {
             body { padding: 0; }
@@ -113,31 +128,11 @@ export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogP
         <div class="qr-grid">
           ${itemsHtml}
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"><\/script>
-        <script>
-          const items = ${JSON.stringify(items)};
-          const colorMode = ${JSON.stringify(colorMode)};
-          const printTheme = ${JSON.stringify(printTheme)};
-          const qrSize = ${qrSize};
-
-          items.forEach((item, i) => {
-            const canvas = document.getElementById('qr-canvas-' + i);
-            if (!canvas) return;
-            const darkColor = colorMode === 'monotone' ? '#000000' : (printTheme === 'dark' ? '#ffffff' : '#000000');
-            const lightColor = colorMode === 'monotone' ? '#ffffff' : (printTheme === 'dark' ? '#1f2937' : '#ffffff');
-            QRCode.toCanvas(canvas, item.controlNumber, {
-              width: qrSize,
-              margin: 2,
-              color: { dark: darkColor, light: lightColor }
-            });
-          });
-
-          setTimeout(() => window.print(), 1000);
-        <\/script>
       </body>
       </html>
     `);
     printWindow.document.close();
+    setTimeout(() => printWindow.print(), 500);
   };
 
   if (!isOpen) return null;
@@ -164,8 +159,8 @@ export function QRCodePrintDialog({ isOpen, onClose, items }: QRCodePrintDialogP
                 colorMode={colorMode}
                 theme={printTheme}
               />
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 truncate max-w-[80px] text-center">
-                {item.name}
+              <span className="text-[10px] text-gray-400 dark:text-gray-400 mt-1 font-mono truncate max-w-[80px] text-center">
+                {item.controlNumber}
               </span>
             </div>
           ))}
