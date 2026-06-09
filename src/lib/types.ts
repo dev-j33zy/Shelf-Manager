@@ -47,5 +47,6 @@ export interface AuditRecord {
   quantity: number;
   quality: Quality;
   notes: string;
+  recorded_by: string;
   scanned_at: string;
 }

@@ -114,6 +114,8 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
 
     setSavingStatus(true);
     try {
+      const displayName = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous';
+
       if (editingRecord) {
         await api.updateAuditRecord(editingRecord.id, scannedEquipment.id, quantity, quality, notes);
       } else {
@@ -123,7 +125,8 @@ export default function AuditSessionPage({ params }: { params: Promise<{ session
           scannedEquipment.control_number,
           quantity,
           quality,
-          notes
+          notes,
+          displayName
         );
       }
 

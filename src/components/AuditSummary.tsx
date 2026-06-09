@@ -4,7 +4,7 @@ import React from 'react';
 import { AuditSession, AuditRecord, Quality } from '@/lib/types';
 import { format } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { CheckCircle, ClipboardCheck, Users } from 'lucide-react';
+import { CheckCircle, ClipboardCheck, Users, UserCheck } from 'lucide-react';
 
 interface AuditSummaryProps {
   session: AuditSession;
@@ -29,6 +29,8 @@ export function AuditSummary({ session, records }: AuditSummaryProps) {
   }));
 
   const totalUnits = records.reduce((sum, r) => sum + r.quantity, 0);
+
+  const uniqueAuditors = [...new Set(records.map(r => r.recorded_by).filter(Boolean))];
 
   return (
     <div className="space-y-6">
@@ -61,11 +63,26 @@ export function AuditSummary({ session, records }: AuditSummaryProps) {
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Broken Items</p>
           </div>
           <div className="px-4 md:px-6 py-4">
-            <div className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-gray-400" />
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{session.audited_by}</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <Users className="w-4 h-4 text-gray-400 shrink-0" />
+              <div className="min-w-0">
+                {uniqueAuditors.length > 0 ? (
+                  <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                    {uniqueAuditors.map((name) => (
+                      <span key={name} className="inline-flex items-center gap-1 text-sm font-medium text-gray-900 dark:text-white">
+                        <UserCheck className="w-3 h-3 text-gray-400" />
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{session.audited_by}</p>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Auditor</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {uniqueAuditors.length > 0 ? `${uniqueAuditors.length} Auditor${uniqueAuditors.length !== 1 ? 's' : ''}` : 'Auditor'}
+            </p>
           </div>
         </div>
       </div>
@@ -123,50 +140,6 @@ export function AuditSummary({ session, records }: AuditSummaryProps) {
         )}
       </div>
 
-      {/* Details table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="px-4 md:px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <h3 className="font-semibold text-gray-800 dark:text-gray-200">Scanned Items Details</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-200">
-              <tr>
-                <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Control No.</th>
-                <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Quantity</th>
-                <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Quality</th>
-                <th className="px-3 md:px-6 py-2.5 md:py-3 font-medium">Notes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {records.map((record) => (
-                <tr key={record.id}>
-                  <td className="px-3 md:px-6 py-3 md:py-4 font-mono text-xs text-gray-900 dark:text-gray-300">
-                    {record.control_number}
-                  </td>
-                  <td className="px-3 md:px-6 py-3 md:py-4 font-medium text-gray-900 dark:text-white">
-                    {record.quantity}
-                  </td>
-                  <td className="px-3 md:px-6 py-3 md:py-4">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                      record.quality === 'New' || record.quality === 'Good'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                        : record.quality === 'Fair' || record.quality === 'Poor'
-                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                        : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                    }`}>
-                      {record.quality}
-                    </span>
-                  </td>
-                  <td className="px-3 md:px-6 py-3 md:py-4 text-xs text-gray-500 dark:text-gray-400 max-w-[200px] truncate">
-                    {record.notes || '-'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }

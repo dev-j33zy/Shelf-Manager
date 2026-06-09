@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS audit_records (
   quantity INTEGER NOT NULL,
   quality TEXT CHECK (quality IN ('New', 'Good', 'Fair', 'Poor', 'Broken')) NOT NULL,
   notes TEXT DEFAULT '',
+  recorded_by TEXT DEFAULT '',
   scanned_at TIMESTAMPTZ DEFAULT NOW()
 );
 

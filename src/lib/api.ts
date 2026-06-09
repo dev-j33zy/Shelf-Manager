@@ -214,7 +214,8 @@ export const api = {
     controlNumber: string,
     quantity: number,
     quality: AuditRecord['quality'],
-    notes: string = ''
+    notes: string = '',
+    recordedBy: string = ''
   ) {
     const { data, error } = await supabase
       .from('audit_records')
@@ -225,6 +226,7 @@ export const api = {
         quantity,
         quality,
         notes,
+        recorded_by: recordedBy,
       }])
       .select()
       .single();
